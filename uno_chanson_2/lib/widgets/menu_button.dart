@@ -36,7 +36,7 @@ class _MenuButtonState extends State<MenuButton> {
               ? const Color(0xE6292115)
               : const Color(0xC714110C),
           border: Border.all(
-            color: _isHovered ? AppTheme.paleGold : AppTheme.gold,
+            color: _isHovered ? AppTheme.brightGold : AppTheme.gold,
             width: _isHovered ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -61,7 +61,7 @@ class _MenuButtonState extends State<MenuButton> {
               padding: const EdgeInsets.symmetric(horizontal: 17),
               child: Row(
                 children: [
-                  Icon(widget.icon, color: AppTheme.paleGold, size: 22),
+                  Icon(widget.icon, color: AppTheme.brightGold, size: 22),
                   const SizedBox(width: 13),
                   Expanded(
                     child: Text(
