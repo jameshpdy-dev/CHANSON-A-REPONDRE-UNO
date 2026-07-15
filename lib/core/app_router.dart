@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/destination_placeholder_screen.dart';
+import '../screens/card_browser_screen.dart';
+import '../screens/card_viewer_screen.dart';
 import '../screens/deck_browser_screen.dart';
 import '../screens/home_screen.dart';
 
@@ -14,6 +16,20 @@ abstract final class AppRouter {
         path: '/',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/cards',
+        name: 'cards',
+        builder: (context, state) => CardBrowserScreen(
+          deckId: state.uri.queryParameters['deck'],
+        ),
+      ),
+      GoRoute(
+        path: '/cards/:cardId',
+        name: 'card-viewer',
+        builder: (context, state) => CardViewerScreen(
+          cardId: state.pathParameters['cardId']!,
+        ),
       ),
       GoRoute(
         path: '/decks',
@@ -35,12 +51,6 @@ abstract final class AppRouter {
 
   static const List<_DestinationRoute> _destinations = [
     _DestinationRoute('/play', 'play', 'Play', Icons.play_arrow_rounded),
-    _DestinationRoute(
-      '/cards',
-      'cards',
-      'Browse Cards',
-      Icons.auto_stories_rounded,
-    ),
     _DestinationRoute('/search', 'search', 'Search', Icons.search_rounded),
     _DestinationRoute('/journal', 'journal', 'Journal', Icons.menu_book_rounded),
     _DestinationRoute('/ai-chat', 'ai-chat', 'AI Chat', Icons.smart_toy_rounded),
