@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../widgets/menu_button.dart';
-
-/// Displays the poster-led landing experience and primary application actions.
+/// Displays the poster-led landing page with responsive, invisible hotspots.
 class HomeScreen extends StatelessWidget {
   /// Creates the application home screen.
   const HomeScreen({super.key});
 
-  static const _actions = <_HomeAction>[
-    _HomeAction('Play', Icons.play_arrow_rounded),
-    _HomeAction('Choose Deck', Icons.style_rounded),
-    _HomeAction('Browse Cards', Icons.auto_stories_rounded),
-    _HomeAction('Search', Icons.search_rounded),
-    _HomeAction('Journal', Icons.menu_book_rounded),
-    _HomeAction('AI Chat', Icons.smart_toy_rounded),
-    _HomeAction('Rules', Icons.gavel_rounded),
-    _HomeAction('Settings', Icons.settings_rounded),
+  static const _posterSize = Size(1440, 2560);
+
+  static const _hotspots = <_PosterHotspot>[
+    _PosterHotspot('Play', '/play', Rect.fromLTWH(772, 111, 92, 110)),
+    _PosterHotspot('Choose Deck', '/decks', Rect.fromLTWH(883, 111, 92, 110)),
+    _PosterHotspot('Browse Cards', '/cards', Rect.fromLTWH(1108, 111, 92, 110)),
+    _PosterHotspot('Journal', '/journal', Rect.fromLTWH(1320, 111, 92, 110)),
+    _PosterHotspot('Settings', '/settings', Rect.fromLTWH(1320, 230, 92, 110)),
+    _PosterHotspot('Rules', '/rules', Rect.fromLTWH(1214, 111, 92, 110)),
+    _PosterHotspot('AI Chat', '/ai-chat', Rect.fromLTWH(320, 1620, 215, 220)),
+    _PosterHotspot('Search', '/search', Rect.fromLTWH(42, 2200, 285, 150)),
   ];
 
   @override
@@ -24,97 +25,67 @@ class HomeScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/home_background.png',
+          FittedBox(
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => const ColoredBox(
-              color: Color(0xFF120E09),
+            child: SizedBox(
+              width: _posterSize.width,
+              height: _posterSize.height,
+              child: Image.asset(
+                'assets/images/home_background.png',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const ColoredBox(color: Color(0x4D000000)),
-          SafeArea(
-            minimum: const EdgeInsets.all(20),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 620;
-                final buttonWidth = isCompact
-                    ? (constraints.maxWidth - 12) / 2
-                    : 310.0;
-
-                return Align(
-                  alignment:
-                      isCompact ? Alignment.bottomCenter : Alignment.centerRight,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isCompact ? constraints.maxWidth : 350,
-                    ),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0xCC120E09),
-                        border: Border.all(
-                          color: const Color(0xFFB8862E).withValues(alpha: 0.8),
-                        ),
-                        borderRadius: const BorderRadius.all(Radius.circular(16)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CHOOSE YOUR PATH',
-                              style: Theme.of(context).textTheme.headlineSmall,
+          FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _posterSize.width,
+              height: _posterSize.height,
+              child: Stack(
+                children: _hotspots
+                    .map(
+                      (hotspot) => Positioned.fromRect(
+                        rect: hotspot.bounds,
+                        child: Semantics(
+                          button: true,
+                          label: hotspot.label,
+                          child: Tooltip(
+                            message: hotspot.label,
+                            child: Material(
+                              type: MaterialType.transparency,
+                              child: InkWell(
+                                onTap: () => context.go(hotspot.path),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: _actions
-                                  .map(
-                                    (action) => SizedBox(
-                                      width: isCompact ? buttonWidth : 318,
-                                      child: MenuButton(
-                                        icon: action.icon,
-                                        label: action.label,
-                                        onPressed: () => _showUnavailableMessage(
-                                          context,
-                                          action.label,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              },
+                    )
+                    .toList(),
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  void _showUnavailableMessage(BuildContext context, String destination) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$destination is coming next.')),
-    );
-  }
 }
 
-/// Describes one destination presented in the home menu.
-class _HomeAction {
-  /// Creates a home-menu destination descriptor.
-  const _HomeAction(this.label, this.icon);
+/// Defines a scalable interactive region on the source poster.
+class _PosterHotspot {
+  /// Creates a poster hotspot.
+  const _PosterHotspot(this.label, this.path, this.bounds);
 
-  /// The menu label.
+  /// The accessible destination name.
   final String label;
 
-  /// The menu icon.
-  final IconData icon;
+  /// The destination path.
+  final String path;
+
+  /// The hotspot bounds in the poster's original coordinate space.
+  final Rect bounds;
 }

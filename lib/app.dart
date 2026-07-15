@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/home_screen.dart';
+import 'core/app_router.dart';
 import 'theme/app_theme.dart';
 
 /// Configures the application-level Material theme and metadata.
@@ -10,11 +10,11 @@ class ChansonARepondreUnoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Chanson a Repondre UNO!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.vintageTheme,
-      home: const HomeScreen(),
+      routerConfig: AppRouter.router,
     );
   }
 }
