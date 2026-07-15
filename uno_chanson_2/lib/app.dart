@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/app_constants.dart';
-import 'screens/home_screen.dart';
+import 'core/app_router.dart';
 import 'theme/app_theme.dart';
 
 class ChansonUnoApp extends StatelessWidget {
@@ -9,11 +9,11 @@ class ChansonUnoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      home: const HomeScreen(),
+      routerConfig: AppRouter.router,
     );
   }
 }

@@ -1,20 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../core/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/menu_button.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  static const _menuItems = <({String label, IconData icon})>[
-    (label: 'Play', icon: Icons.play_arrow_rounded),
-    (label: 'Choose Deck', icon: Icons.style_rounded),
-    (label: 'Browse Cards', icon: Icons.menu_book_rounded),
-    (label: 'Search', icon: Icons.search_rounded),
-    (label: 'Journal', icon: Icons.library_books_rounded),
-    (label: 'AI Chat', icon: Icons.smart_toy_rounded),
-    (label: 'Rules', icon: Icons.gavel_rounded),
-    (label: 'Settings', icon: Icons.settings_rounded),
+  static const _menuItems =
+      <({String label, IconData icon, String route})>[
+        (
+          label: 'Play',
+          icon: Icons.play_arrow_rounded,
+          route: AppRoutes.play,
+        ),
+        (label: 'Choose Deck', icon: Icons.style_rounded, route: AppRoutes.decks),
+        (
+          label: 'Browse Cards',
+          icon: Icons.menu_book_rounded,
+          route: AppRoutes.cards,
+        ),
+        (label: 'Search', icon: Icons.search_rounded, route: AppRoutes.search),
+        (
+          label: 'Journal',
+          icon: Icons.library_books_rounded,
+          route: AppRoutes.journal,
+        ),
+        (
+          label: 'AI Chat',
+          icon: Icons.smart_toy_rounded,
+          route: AppRoutes.aiChat,
+        ),
+        (label: 'Rules', icon: Icons.gavel_rounded, route: AppRoutes.rules),
+        (
+          label: 'Settings',
+          icon: Icons.settings_rounded,
+          route: AppRoutes.settings,
+        ),
   ];
 
   @override
@@ -75,10 +98,8 @@ class HomeScreen extends StatelessWidget {
                                 MenuButton(
                                   label: _menuItems[index].label,
                                   icon: _menuItems[index].icon,
-                                  onPressed: () => _showComingSoon(
-                                    context,
-                                    _menuItems[index].label,
-                                  ),
+                                  onPressed: () =>
+                                      context.go(_menuItems[index].route),
                                 ),
                                 if (index != _menuItems.length - 1)
                                   const SizedBox(height: 10),
@@ -96,11 +117,5 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _showComingSoon(BuildContext context, String destination) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$destination coming soon')));
   }
 }
