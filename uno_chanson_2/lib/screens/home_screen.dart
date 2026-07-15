@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/app_router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/background_shell.dart';
 import '../widgets/menu_button.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -43,17 +44,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/home_background.png',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
-          const ColoredBox(color: Color(0x4D000000)),
-          SafeArea(
-            child: LayoutBuilder(
+      body: BackgroundShell(
+        child: LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxWidth < 700;
                 return Align(
@@ -113,8 +105,6 @@ class HomeScreen extends StatelessWidget {
                 );
               },
             ),
-          ),
-        ],
       ),
     );
   }
