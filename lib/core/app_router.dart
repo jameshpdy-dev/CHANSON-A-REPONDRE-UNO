@@ -5,7 +5,8 @@ import '../screens/destination_placeholder_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_viewer_screen.dart';
 import '../screens/png_upload_screen.dart';
-import '../screens/deck_browser_screen.dart';
+import '../screens/deck_gallery_screen.dart';
+import '../screens/deck_selection_screen.dart';
 import '../screens/home_screen.dart';
 
 /// Owns the application's declarative navigation graph.
@@ -21,16 +22,14 @@ abstract final class AppRouter {
       GoRoute(
         path: '/cards',
         name: 'cards',
-        builder: (context, state) => CardBrowserScreen(
-          deckId: state.uri.queryParameters['deck'],
-        ),
+        builder: (context, state) =>
+            CardBrowserScreen(deckId: state.uri.queryParameters['deck']),
       ),
       GoRoute(
         path: '/cards/:cardId',
         name: 'card-viewer',
-        builder: (context, state) => CardViewerScreen(
-          cardId: state.pathParameters['cardId']!,
-        ),
+        builder: (context, state) =>
+            CardViewerScreen(cardId: state.pathParameters['cardId']!),
       ),
       GoRoute(
         path: '/upload-png',
@@ -40,7 +39,13 @@ abstract final class AppRouter {
       GoRoute(
         path: '/decks',
         name: 'decks',
-        builder: (context, state) => const DeckBrowserScreen(),
+        builder: (context, state) => const DeckSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/decks/:deckId',
+        name: 'deck-gallery',
+        builder: (context, state) =>
+            DeckGalleryScreen(deckId: state.pathParameters['deckId']!),
       ),
       ..._destinations.map(
         (destination) => GoRoute(
@@ -58,10 +63,25 @@ abstract final class AppRouter {
   static const List<_DestinationRoute> _destinations = [
     _DestinationRoute('/play', 'play', 'Play', Icons.play_arrow_rounded),
     _DestinationRoute('/search', 'search', 'Search', Icons.search_rounded),
-    _DestinationRoute('/journal', 'journal', 'Journal', Icons.menu_book_rounded),
-    _DestinationRoute('/ai-chat', 'ai-chat', 'AI Chat', Icons.smart_toy_rounded),
+    _DestinationRoute(
+      '/journal',
+      'journal',
+      'Journal',
+      Icons.menu_book_rounded,
+    ),
+    _DestinationRoute(
+      '/ai-chat',
+      'ai-chat',
+      'AI Chat',
+      Icons.smart_toy_rounded,
+    ),
     _DestinationRoute('/rules', 'rules', 'Rules', Icons.gavel_rounded),
-    _DestinationRoute('/settings', 'settings', 'Settings', Icons.settings_rounded),
+    _DestinationRoute(
+      '/settings',
+      'settings',
+      'Settings',
+      Icons.settings_rounded,
+    ),
   ];
 }
 
