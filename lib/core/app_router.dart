@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/destination_placeholder_screen.dart';
+import '../screens/deck_browser_screen.dart';
 import '../screens/home_screen.dart';
 
 /// Owns the application's declarative navigation graph.
@@ -13,6 +14,11 @@ abstract final class AppRouter {
         path: '/',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/decks',
+        name: 'decks',
+        builder: (context, state) => const DeckBrowserScreen(),
       ),
       ..._destinations.map(
         (destination) => GoRoute(
@@ -29,7 +35,6 @@ abstract final class AppRouter {
 
   static const List<_DestinationRoute> _destinations = [
     _DestinationRoute('/play', 'play', 'Play', Icons.play_arrow_rounded),
-    _DestinationRoute('/decks', 'decks', 'Choose Deck', Icons.style_rounded),
     _DestinationRoute(
       '/cards',
       'cards',
