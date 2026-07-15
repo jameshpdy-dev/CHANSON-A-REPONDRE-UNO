@@ -6,9 +6,22 @@ abstract final class AppTheme {
   static final ThemeData vintageTheme = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF8A6428),
-      brightness: Brightness.light,
-      surface: const Color(0xFFF3E8D1),
+      seedColor: const Color(0xFFD5A53C),
+      brightness: Brightness.dark,
+      surface: const Color(0xFF20170D),
+    ),
+    scaffoldBackgroundColor: const Color(0xFF120E09),
+    textTheme: const TextTheme(
+      headlineSmall: TextStyle(
+        color: Color(0xFFFFE2A4),
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0,
+      ),
+      titleMedium: TextStyle(
+        color: Color(0xFFFFF4DC),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0,
+      ),
     ),
   );
 }
