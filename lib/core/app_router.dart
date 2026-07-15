@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/destination_placeholder_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_viewer_screen.dart';
+import '../screens/png_upload_screen.dart';
 import '../screens/deck_browser_screen.dart';
 import '../screens/home_screen.dart';
 
@@ -30,6 +31,11 @@ abstract final class AppRouter {
         builder: (context, state) => CardViewerScreen(
           cardId: state.pathParameters['cardId']!,
         ),
+      ),
+      GoRoute(
+        path: '/upload-png',
+        name: 'upload-png',
+        builder: (context, state) => const PngUploadScreen(),
       ),
       GoRoute(
         path: '/decks',

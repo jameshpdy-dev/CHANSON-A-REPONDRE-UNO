@@ -22,6 +22,13 @@ class DeckBrowserScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Home',
         ),
+        actions: [
+          IconButton(
+            onPressed: () => context.go('/upload-png'),
+            icon: const Icon(Icons.upload_file_rounded),
+            tooltip: 'Upload PNG cards',
+          ),
+        ],
       ),
       body: _DeckBrowserBody(cardsState: cardsState),
     );
