@@ -38,7 +38,8 @@ void main() {
       'RULES',
       'SETTINGS',
     ]) {
-      expect(find.text(label), label == 'PLAY' ? findsWidgets : findsOneWidget);
+      // Some destinations also appear in persistent navigation.
+      expect(find.text(label), findsWidgets);
     }
   });
 }
