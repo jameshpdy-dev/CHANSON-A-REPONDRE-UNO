@@ -1,0 +1,57 @@
+import 'package:flutter/material.dart';
+
+class CardHandToolbar extends StatelessWidget {
+  const CardHandToolbar({
+    required this.deckName,
+    required this.cardCount,
+    required this.filterCount,
+    required this.isShuffling,
+    required this.onShuffle,
+    required this.onReset,
+    required this.onFilter,
+    super.key,
+  });
+  final String deckName;
+  final int cardCount;
+  final int filterCount;
+  final bool isShuffling;
+  final VoidCallback? onShuffle;
+  final VoidCallback onReset;
+  final VoidCallback onFilter;
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.center,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: 10,
+    runSpacing: 8,
+    children: [
+      Text(deckName, style: Theme.of(context).textTheme.titleLarge),
+      Chip(label: Text('$cardCount cards')),
+      if (filterCount > 0)
+        Chip(
+          avatar: const Icon(Icons.filter_alt, size: 16),
+          label: Text('$filterCount filters'),
+        ),
+      FilledButton.icon(
+        onPressed: isShuffling ? null : onShuffle,
+        icon: isShuffling
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.shuffle_rounded),
+        label: const Text('SHUFFLE 5 CARDS'),
+      ),
+      OutlinedButton.icon(
+        onPressed: isShuffling ? null : onReset,
+        icon: const Icon(Icons.restart_alt),
+        label: const Text('RESET TO FIRST 5'),
+      ),
+      IconButton.outlined(
+        tooltip: 'Filters',
+        onPressed: onFilter,
+        icon: const Icon(Icons.filter_list),
+      ),
+    ],
+  );
+}
