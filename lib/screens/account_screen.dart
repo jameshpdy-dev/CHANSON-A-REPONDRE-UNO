@@ -11,6 +11,19 @@ import '../services/protected_ai_guard.dart';
 import '../widgets/configuration_status_row.dart';
 import '../widgets/home_navigation_button.dart';
 
+String? validateProfileEmail(String? value) =>
+    RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value?.trim() ?? '')
+    ? null
+    : 'Enter a valid email address.';
+
+String? validateProfilePassword(String? value) =>
+    (value?.length ?? 0) < 8 ? 'Use at least 8 characters.' : null;
+
+String? validateProfilePasswordConfirmation({
+  required String? value,
+  required String password,
+}) => value == password ? null : 'Passwords do not match.';
+
 class AccountScreen extends StatefulWidget {
   const AccountScreen({
     this.arguments,
@@ -266,12 +279,7 @@ class _AccountScreenState extends State<AccountScreen> {
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (value) =>
-                  RegExp(
-                    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                  ).hasMatch(value?.trim() ?? '')
-                  ? null
-                  : 'Enter a valid email address.',
+              validator: validateProfileEmail,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -294,9 +302,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
                 ),
               ),
-              validator: (value) => (value?.length ?? 0) < 8
-                  ? 'Use at least 8 characters.'
-                  : null,
+              validator: validateProfilePassword,
             ),
             if (registering) ...[
               const SizedBox(height: 12),
@@ -310,8 +316,10 @@ class _AccountScreenState extends State<AccountScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Confirm password',
                 ),
-                validator: (value) =>
-                    value == password.text ? null : 'Passwords do not match.',
+                validator: (value) => validateProfilePasswordConfirmation(
+                  value: value,
+                  password: password.text,
+                ),
               ),
             ],
             const SizedBox(height: 18),
@@ -454,7 +462,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _resetPassword(AuthController auth) async {
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email.text.trim())) {
+    if (validateProfileEmail(email.text) != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid email address first.')),
       );
