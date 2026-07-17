@@ -40,7 +40,8 @@ jobs:
       - name: Run tests
         run: flutter test
 
-      - name: Validate public configuration
+      - name: Resolve public configuration
+        id: config
         shell: bash
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -48,26 +49,28 @@ jobs:
           AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
         run: |
           set -euo pipefail
-          test -n "${SUPABASE_URL}" || {
-            echo "SUPABASE_URL repository variable is missing."; exit 1;
-          }
-          test -n "${SUPABASE_ANON_KEY}" || {
-            echo "SUPABASE_ANON_KEY repository variable is missing."; exit 1;
-          }
           shopt -s nocasematch
-          [[ ! "${SUPABASE_URL}" =~ (your_|real_project|placeholder|example|dummy) ]] || {
-            echo "SUPABASE_URL contains a placeholder."; exit 1;
-          }
-          [[ ! "${SUPABASE_ANON_KEY}" =~ (your_|real_publishable|placeholder|example|dummy) ]] || {
-            echo "SUPABASE_ANON_KEY contains a placeholder."; exit 1;
-          }
-          [[ "${SUPABASE_URL}" == https://*.supabase.co ]] || {
-            echo "SUPABASE_URL must be the HTTPS project URL."; exit 1;
-          }
+          PREVIEW=false
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            PREVIEW=true
+          elif [[ "${SUPABASE_URL}" =~ (your_|real_project|placeholder|example|dummy) ]] ||
+               [[ "${SUPABASE_ANON_KEY}" =~ (your_|real_publishable|placeholder|example|dummy) ]]; then
+            echo "Supabase repository variables contain placeholders."
+            exit 1
+          elif [[ "${SUPABASE_URL}" != https://*.supabase.co ]]; then
+            echo "SUPABASE_URL must be the HTTPS project URL."
+            exit 1
+          fi
           if [ -n "${AI_BACKEND_URL}" ] && [[ "${AI_BACKEND_URL}" != https://* ]]; then
             echo "Production AI_BACKEND_URL must use HTTPS."
             exit 1
           fi
+          if [ "${PREVIEW}" = true ]; then
+            echo "Building local-only preview: authentication and protected AI are disabled."
+          else
+            echo "Building configured application."
+          fi
+          echo "preview=${PREVIEW}" >> "${GITHUB_OUTPUT}"
 
       - name: Build Flutter web release
         run: |
@@ -95,6 +98,8 @@ jobs:
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
