@@ -55,7 +55,7 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
 
   @override
   Widget build(BuildContext context) {
-    final currentPath = AppRouter.router.state.uri.path;
+    final currentPath = AppRouter.router.routeInformationProvider.value.uri.path;
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
     final showLabel = MediaQuery.sizeOf(context).width >= 600;

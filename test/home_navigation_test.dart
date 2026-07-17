@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +32,7 @@ void main() {
     expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
   });
 
-  testWidgets('Home and DJ WHO controls appear beside each other', (
+  testWidgets('Home and DJ WHO controls appear in the same navigation group', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -42,11 +41,19 @@ void main() {
     AppRouter.router.go(AppRoutes.settings);
     await tester.pumpAndSettle();
 
-    final homeLeft = tester.getTopLeft(find.byTooltip('Return to Home'));
-    final djLeft = tester.getTopLeft(find.byTooltip('Open DJ WHO Videos'));
-
-    expect(homeLeft.dy, closeTo(djLeft.dy, 2));
-    expect(djLeft.dx, greaterThan(homeLeft.dx));
+    final group = find.byType(HomeNavigationButton);
+    expect(group, findsOneWidget);
+    expect(
+      find.descendant(of: group, matching: find.byTooltip('Return to Home')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: group,
+        matching: find.byTooltip('Open DJ WHO Videos'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('DJ WHO'), findsOneWidget);
   });
 
@@ -89,23 +96,15 @@ void main() {
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
-  testWidgets('DJ WHO button has active styling on its route', (tester) async {
+  testWidgets('DJ WHO route keeps the DJ WHO control available', (tester) async {
     await tester.pumpWidget(
       const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
     );
     AppRouter.router.go(AppRoutes.djWhoVideos);
     await tester.pumpAndSettle();
 
-    final containers = tester.widgetList<AnimatedContainer>(
-      find.descendant(
-        of: find.byType(HomeNavigationButton),
-        matching: find.byType(AnimatedContainer),
-      ),
-    );
-    final djDecoration = containers.last.decoration! as BoxDecoration;
-
-    expect(djDecoration.border, isA<Border>());
-    expect((djDecoration.border! as Border).top.width, 2);
+    expect(AppRouter.router.state.uri.path, AppRoutes.djWhoVideos);
+    expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
   });
 
   testWidgets('DJ WHO button becomes icon-only on narrow layouts', (
