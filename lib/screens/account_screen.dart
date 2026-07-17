@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -26,13 +25,6 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  static const _launchTemplate =
-      'flutter run -d windows `\n'
-      '  --dart-define=AI_BACKEND_URL=http://127.0.0.1:3000 `\n'
-      '  --dart-define=SUPABASE_URL=https://REAL_PROJECT_ID.supabase.co `\n'
-      '  --dart-define=SUPABASE_ANON_KEY=REAL_PUBLISHABLE_KEY `\n'
-      '  --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false';
-
   final formKey = GlobalKey<FormState>();
   final email = TextEditingController();
   final password = TextEditingController();
@@ -69,6 +61,9 @@ class _AccountScreenState extends State<AccountScreen> {
     if (!mounted) return;
     if (success) {
       setState(() => registering = false);
+      if (widget.arguments != null && context.canPop()) {
+        context.pop(true);
+      }
     } else if (registering &&
         auth.error?.startsWith('Account created.') == true) {
       setState(() => registering = false);
@@ -139,13 +134,6 @@ class _AccountScreenState extends State<AccountScreen> {
         children: [
           Text('Session status', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
-          ConfigurationStatusRow(
-            label: 'UI access mode',
-            status: AppConfig.shouldSkipAuthentication
-                ? 'Development bypass'
-                : 'Standard',
-            isValid: true,
-          ),
           ConfigurationStatusRow(
             label: 'Account session',
             status: auth.user == null ? 'Not signed in' : 'Real session',
@@ -218,8 +206,8 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 10),
           const Text(
-            'Real account login is unavailable because the application was '
-            'launched without valid Supabase credentials.',
+            'Authentication is unavailable because the application is not '
+            'configured or Supabase could not be initialized.',
           ),
           const SizedBox(height: 14),
           const ConfigurationStatusRow(
@@ -232,27 +220,11 @@ class _AccountScreenState extends State<AccountScreen> {
             status: 'Missing or placeholder',
             isValid: false,
           ),
-          const SizedBox(height: 14),
-          const SelectableText(_launchTemplate),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: () => context.go(AppRoutes.settings),
             icon: const Icon(Icons.settings),
-            label: const Text('Open authentication settings'),
-          ),
-          OutlinedButton.icon(
-            onPressed: () async {
-              await Clipboard.setData(
-                const ClipboardData(text: _launchTemplate),
-              );
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Launch template copied.')),
-                );
-              }
-            },
-            icon: const Icon(Icons.copy),
-            label: const Text('Copy launch-command template'),
+            label: const Text('Open settings'),
           ),
         ],
       ),
@@ -271,13 +243,6 @@ class _AccountScreenState extends State<AccountScreen> {
               registering ? 'Create account' : 'Sign in to your profile',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            if (AppConfig.shouldSkipAuthentication) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'Development bypass remains active for UI access. A real '
-                'session is still required for protected AI requests.',
-              ),
-            ],
             if (auth.error != null) ...[
               const SizedBox(height: 12),
               Text(
