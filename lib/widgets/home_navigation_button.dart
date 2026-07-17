@@ -59,7 +59,11 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
     final isDjWhoActive = currentPath == AppRoutes.djWhoVideos;
 
     final showLabel = MediaQuery.sizeOf(context).width >= 600;
-    return Row(
+    final djWidth = showLabel ? 112.0 : 48.0;
+    return SizedBox(
+      width: 48 + 8 + djWidth,
+      height: 48,
+      child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             _HomeControl(
@@ -75,11 +79,13 @@ class _HomeNavigationButtonState extends State<HomeNavigationButton> {
               hovered: djHovered,
               focused: djFocused,
               showLabel: showLabel,
+              width: djWidth,
               onHover: (value) => setState(() => djHovered = value),
               onFocus: (value) => setState(() => djFocused = value),
               onPressed: () => context.go(AppRoutes.djWhoVideos),
             ),
           ],
+      ),
     );
   }
 }
@@ -139,6 +145,7 @@ class _DjWhoControl extends StatelessWidget {
     required this.hovered,
     required this.focused,
     required this.showLabel,
+    required this.width,
     required this.onHover,
     required this.onFocus,
     required this.onPressed,
@@ -148,6 +155,7 @@ class _DjWhoControl extends StatelessWidget {
   final bool hovered;
   final bool focused;
   final bool showLabel;
+  final double width;
   final ValueChanged<bool> onHover;
   final ValueChanged<bool> onFocus;
   final VoidCallback onPressed;
@@ -167,10 +175,8 @@ class _DjWhoControl extends StatelessWidget {
           onFocusChange: onFocus,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            constraints: BoxConstraints(
-              minWidth: showLabel ? 106 : 48,
-              minHeight: 48,
-            ),
+            width: width,
+            height: 48,
             decoration: BoxDecoration(
               color: active
                   ? colors.primaryContainer.withValues(alpha: 0.72)
@@ -188,18 +194,25 @@ class _DjWhoControl extends StatelessWidget {
             ),
             child: Tooltip(
               message: 'Open DJ WHO Videos',
-              child: TextButton.icon(
+              child: TextButton(
                 onPressed: onPressed,
-                icon: const Icon(Icons.ondemand_video),
-                label: showLabel
-                    ? const Text('DJ WHO')
-                    : const SizedBox.shrink(),
                 style: TextButton.styleFrom(
                   foregroundColor: foreground,
                   minimumSize: const Size(48, 48),
-                  padding: EdgeInsets.symmetric(horizontal: showLabel ? 14 : 0),
+                  padding: EdgeInsets.symmetric(horizontal: showLabel ? 12 : 0),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.ondemand_video),
+                    if (showLabel) ...[
+                      const SizedBox(width: 8),
+                      const Text('DJ WHO'),
+                    ],
+                  ],
                 ),
               ),
             ),
