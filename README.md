@@ -15,6 +15,27 @@ Production builds use the secure proxy in `server/`; the OpenAI key never enters
 
 Create a Supabase project, then open **Authentication -> Providers -> Email** and enable the Email provider. Copy the project URL and publishable key (or legacy anon key) from the project API settings. The application rejects missing values and placeholders such as `YOUR_PROJECT`.
 
+For the deployed GitHub Pages app, configure **Authentication -> URL Configuration** in Supabase:
+
+```text
+Site URL:
+https://jameshpdy-dev.github.io/CHANSON-A-REPONDRE-UNO/
+
+Redirect URL:
+https://jameshpdy-dev.github.io/CHANSON-A-REPONDRE-UNO/#/profile
+```
+
+The Flutter production build must receive only client-safe values:
+
+```text
+AI_BACKEND_URL
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SKIP_AUTH_FOR_DEVELOPMENT=false
+```
+
+Do not use a Supabase `service_role` key, database password, OpenAI key, access token, or refresh token in Flutter or GitHub Pages build variables.
+
 Launch Flutter with real public client configuration:
 
 ```powershell

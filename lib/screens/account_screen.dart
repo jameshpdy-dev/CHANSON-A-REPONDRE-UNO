@@ -16,8 +16,13 @@ String? validateProfileEmail(String? value) =>
     ? null
     : 'Enter a valid email address.';
 
-String? validateProfilePassword(String? value) =>
-    (value?.length ?? 0) < 8 ? 'Use at least 8 characters.' : null;
+String? validateProfilePassword(String? value) {
+  if ((value ?? '').isEmpty) return 'Enter your password.';
+  if (value!.length < 6) {
+    return 'Password must contain at least 6 characters.';
+  }
+  return null;
+}
 
 String? validateProfilePasswordConfirmation({
   required String? value,

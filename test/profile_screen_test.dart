@@ -14,8 +14,15 @@ void main() {
       );
     });
 
-    test('requires passwords with at least eight characters', () {
-      expect(validateProfilePassword('short'), 'Use at least 8 characters.');
+    test('requires a password value', () {
+      expect(validateProfilePassword(''), 'Enter your password.');
+    });
+
+    test('requires passwords with at least six characters', () {
+      expect(
+        validateProfilePassword('short'),
+        'Password must contain at least 6 characters.',
+      );
       expect(validateProfilePassword('password'), isNull);
     });
 
