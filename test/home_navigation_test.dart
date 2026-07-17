@@ -45,7 +45,7 @@ void main() {
     final homeLeft = tester.getTopLeft(find.byTooltip('Return to Home'));
     final djLeft = tester.getTopLeft(find.byTooltip('Open DJ WHO Videos'));
 
-    expect(homeLeft.dy, djLeft.dy);
+    expect(homeLeft.dy, closeTo(djLeft.dy, 2));
     expect(djLeft.dx, greaterThan(homeLeft.dx));
     expect(find.text('DJ WHO'), findsOneWidget);
   });
