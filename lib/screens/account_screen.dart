@@ -60,6 +60,8 @@ class _AccountScreenState extends State<AccountScreen> {
         : await auth.signIn(email.text, password.text);
     if (!mounted) return;
     if (success) {
+      password.clear();
+      confirmation.clear();
       setState(() => registering = false);
       if (widget.arguments != null && context.canPop()) {
         context.pop(true);
@@ -82,7 +84,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('PROFILE'),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 8),
@@ -240,9 +242,16 @@ class _AccountScreenState extends State<AccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              registering ? 'Create account' : 'Sign in to your profile',
+              registering ? 'Create account' : 'Sign in to access AI features',
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            if (!registering) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Gameplay, decks, cards, Journal, Rules, and Settings remain '
+                'available without signing in.',
+              ),
+            ],
             if (auth.error != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -314,7 +323,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Icon(registering ? Icons.person_add : Icons.login),
-              label: Text(registering ? 'Create account' : 'Sign in'),
+              label: Text(registering ? 'CREATE ACCOUNT' : 'SIGN IN'),
             ),
             TextButton(
               onPressed: auth.busy
@@ -323,12 +332,12 @@ class _AccountScreenState extends State<AccountScreen> {
                       auth.clearError();
                       setState(() => registering = !registering);
                     },
-              child: Text(registering ? 'Back to sign in' : 'Create account'),
+              child: Text(registering ? 'BACK TO SIGN IN' : 'CREATE ACCOUNT'),
             ),
             if (!registering)
               TextButton(
                 onPressed: auth.busy ? null : () => _resetPassword(auth),
-                child: const Text('Forgot password?'),
+                child: const Text('FORGOT PASSWORD'),
               ),
           ],
         ),
@@ -359,14 +368,26 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
+              onPressed: backendOnline
+                  ? () => context.go(AppRoutes.aiChat)
+                  : null,
+              icon: const Icon(Icons.smart_toy_outlined),
+              label: const Text('OPEN AI CHAT'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => context.go(AppRoutes.cards),
+              icon: const Icon(Icons.document_scanner_outlined),
+              label: const Text('OPEN CARD TRANSCRIPTION'),
+            ),
+            FilledButton.icon(
               onPressed: auth.busy ? null : auth.refreshSession,
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh session'),
             ),
             OutlinedButton.icon(
-              onPressed: auth.busy ? null : auth.signOut,
+              onPressed: auth.busy ? null : () => _signOut(auth),
               icon: const Icon(Icons.logout),
-              label: const Text('Sign out'),
+              label: const Text('SIGN OUT'),
             ),
             if (widget.arguments != null)
               FilledButton(
@@ -450,5 +471,13 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _signOut(AuthController auth) async {
+    await auth.signOut();
+    email.clear();
+    password.clear();
+    confirmation.clear();
+    if (mounted) setState(() => registering = false);
   }
 }

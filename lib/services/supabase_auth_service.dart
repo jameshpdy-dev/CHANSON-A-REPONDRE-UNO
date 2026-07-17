@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../models/auth_user.dart';
+import '../core/app_config.dart';
 import 'auth_service.dart';
 
 class SupabaseAuthService implements AuthService {
@@ -25,6 +26,12 @@ class SupabaseAuthService implements AuthService {
         email: email.trim(),
         password: password,
       );
+      final session = response.session ?? _client.auth.currentSession;
+      if (session == null || session.accessToken.trim().isEmpty) {
+        throw const AuthException(
+          'Authentication succeeded without a valid session. Sign in again.',
+        );
+      }
       return _requireUser(response.user);
     } on supabase.AuthException catch (error) {
       throw AuthException(_friendly(error, login: true));
@@ -40,6 +47,7 @@ class SupabaseAuthService implements AuthService {
       final response = await _client.auth.signUp(
         email: email.trim(),
         password: password,
+        emailRedirectTo: AppConfig.authenticationRedirectUrl,
       );
       final user = _requireUser(response.user);
       if (response.session == null) {
@@ -54,7 +62,10 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<void> sendPasswordReset({required String email}) async {
     try {
-      await _client.auth.resetPasswordForEmail(email.trim());
+      await _client.auth.resetPasswordForEmail(
+        email.trim(),
+        redirectTo: AppConfig.authenticationRedirectUrl,
+      );
     } on supabase.AuthException catch (error) {
       throw AuthException(_friendly(error));
     }

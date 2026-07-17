@@ -51,9 +51,17 @@ class AppConfig {
 
   static bool isValidSupabaseClientKey(String value) {
     final normalized = value.trim();
-    return !isPlaceholder(normalized) &&
-        normalized.length >= 24 &&
-        !normalized.contains(RegExp(r'\s'));
+    if (isPlaceholder(normalized) ||
+        normalized.contains(RegExp(r'\s')) ||
+        normalized.startsWith('sb_secret_') ||
+        normalized.toLowerCase().contains('service_role')) {
+      return false;
+    }
+    final modernPublishable =
+        normalized.startsWith('sb_publishable_') && normalized.length >= 32;
+    final legacyAnonJwt =
+        normalized.startsWith('eyJ') && normalized.split('.').length == 3;
+    return modernPublishable || legacyAnonJwt;
   }
 
   static bool isValidSupabaseUrl(String value) {
@@ -102,5 +110,14 @@ class AppConfig {
       return 'A production Web build requires an HTTPS AI backend. Browsers block insecure mixed-content requests.';
     }
     return null;
+  }
+
+  static const productionProfileRedirect =
+      'https://jameshpdy-dev.github.io/CHANSON-A-REPONDRE-UNO/#/profile';
+
+  static String get authenticationRedirectUrl {
+    if (kIsWeb && kReleaseMode) return productionProfileRedirect;
+    final base = Uri.base;
+    return base.replace(fragment: '/profile').toString();
   }
 }
