@@ -24,6 +24,13 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+    await tester.ensureVisible(finder);
+    await tester.pump();
+    await tester.tap(finder);
+    await tester.pump();
+  }
+
   testWidgets('signed-out Profile renders the complete login form', (
     tester,
   ) async {
@@ -43,8 +50,7 @@ void main() {
     final auth = _ProfileAuthService(signInUser: user);
     await openProfile(tester, auth);
 
-    await tester.tap(find.text('SIGN IN'));
-    await tester.pump();
+    await tapVisible(tester, find.text('SIGN IN'));
 
     expect(find.text('Enter a valid email address.'), findsOneWidget);
     expect(find.text('Use at least 8 characters.'), findsOneWidget);
@@ -65,8 +71,7 @@ void main() {
       find.widgetWithText(TextFormField, 'Password'),
       'password',
     );
-    await tester.tap(find.text('SIGN IN'));
-    await tester.pump();
+    await tapVisible(tester, find.text('SIGN IN'));
 
     expect(find.text('Signed in'), findsOneWidget);
     expect(find.text('Email: ${user.email}'), findsOneWidget);
@@ -81,14 +86,12 @@ void main() {
     );
     await openProfile(tester, auth);
 
-    await tester.tap(find.text('CREATE ACCOUNT'));
-    await tester.pump();
+    await tapVisible(tester, find.text('CREATE ACCOUNT'));
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), user.email);
     await tester.enterText(fields.at(1), 'password');
     await tester.enterText(fields.at(2), 'password');
-    await tester.tap(find.text('CREATE ACCOUNT').last);
-    await tester.pump();
+    await tapVisible(tester, find.text('CREATE ACCOUNT').last);
 
     expect(find.textContaining('Check your email'), findsWidgets);
     expect(find.text('SIGN IN'), findsOneWidget);
@@ -103,8 +106,7 @@ void main() {
       find.widgetWithText(TextFormField, 'Email'),
       user.email,
     );
-    await tester.tap(find.text('FORGOT PASSWORD'));
-    await tester.pump();
+    await tapVisible(tester, find.text('FORGOT PASSWORD'));
     expect(
       find.textContaining('If an account exists for this email'),
       findsOneWidget,
@@ -113,8 +115,7 @@ void main() {
 
     auth.emit(user);
     await tester.pump();
-    await tester.tap(find.text('SIGN OUT'));
-    await tester.pump();
+    await tapVisible(tester, find.text('SIGN OUT'));
     expect(find.text('SIGN IN'), findsOneWidget);
     final emailField = tester.widget<TextFormField>(
       find.widgetWithText(TextFormField, 'Email'),
