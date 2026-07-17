@@ -4,6 +4,7 @@ import '../screens/card_browser_screen.dart';
 import '../screens/card_fullscreen_screen.dart';
 import '../screens/card_transcription_screen.dart';
 import '../screens/deck_selection_screen.dart';
+import '../screens/dj_who_videos_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/journal_screen.dart';
 import '../screens/not_found_screen.dart';
@@ -29,6 +30,7 @@ abstract final class AppRoutes {
   static const rules = '/rules';
   static const settings = '/settings';
   static const profile = '/profile';
+  static const djWhoVideos = '/dj-who-videos';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
@@ -96,6 +98,10 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.settings,
         builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.djWhoVideos,
+        builder: (_, _) => const DjWhoVideosScreen(),
       ),
       GoRoute(
         path: AppRoutes.profile,

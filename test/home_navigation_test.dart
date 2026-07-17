@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +30,37 @@ void main() {
     AppRouter.router.go(AppRoutes.settings);
     await tester.pumpAndSettle();
     expect(find.byType(HomeNavigationButton), findsOneWidget);
+    expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
+  });
+
+  testWidgets('Home and DJ WHO controls appear beside each other', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    );
+    AppRouter.router.go(AppRoutes.settings);
+    await tester.pumpAndSettle();
+
+    final homeLeft = tester.getTopLeft(find.byTooltip('Return to Home'));
+    final djLeft = tester.getTopLeft(find.byTooltip('Open DJ WHO Videos'));
+
+    expect(homeLeft.dy, djLeft.dy);
+    expect(djLeft.dx, greaterThan(homeLeft.dx));
+    expect(find.text('DJ WHO'), findsOneWidget);
+  });
+
+  testWidgets('DJ WHO button opens the DJ WHO Videos route', (tester) async {
+    await tester.pumpWidget(
+      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    );
+    AppRouter.router.go(AppRoutes.settings);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open DJ WHO Videos'));
+    await tester.pumpAndSettle();
+
+    expect(AppRouter.router.state.uri.path, AppRoutes.djWhoVideos);
+    expect(find.text('DJ WHO Videos'), findsWidgets);
   });
 
   testWidgets('Home button goes directly to Home without duplicates', (
@@ -43,6 +75,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(AppRouter.router.canPop(), isFalse);
+  });
+
+  testWidgets('Home still returns from DJ WHO Videos to Home', (tester) async {
+    await tester.pumpWidget(
+      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    );
+    AppRouter.router.go(AppRoutes.djWhoVideos);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Return to Home'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
+  testWidgets('DJ WHO button has active styling on its route', (tester) async {
+    await tester.pumpWidget(
+      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    );
+    AppRouter.router.go(AppRoutes.djWhoVideos);
+    await tester.pumpAndSettle();
+
+    final containers = tester.widgetList<AnimatedContainer>(
+      find.descendant(
+        of: find.byType(HomeNavigationButton),
+        matching: find.byType(AnimatedContainer),
+      ),
+    );
+    final djDecoration = containers.last.decoration! as BoxDecoration;
+
+    expect(djDecoration.border, isA<Border>());
+    expect((djDecoration.border! as Border).top.width, 2);
+  });
+
+  testWidgets('DJ WHO button becomes icon-only on narrow layouts', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(500, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      const ChansonUnoApp(aiBackendUrlOverride: 'https://api.test'),
+    );
+    AppRouter.router.go(AppRoutes.settings);
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Return to Home'), findsOneWidget);
+    expect(find.byTooltip('Open DJ WHO Videos'), findsOneWidget);
+    expect(find.text('DJ WHO'), findsNothing);
   });
 
   testWidgets('unknown route includes a working Home button', (tester) async {
