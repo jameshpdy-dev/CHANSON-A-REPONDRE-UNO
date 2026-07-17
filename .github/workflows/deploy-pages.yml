@@ -46,15 +46,17 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           AI_BACKEND_URL: ${{ vars.AI_BACKEND_URL }}
         run: |
           set -euo pipefail
           shopt -s nocasematch
           PREVIEW=false
-          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+          SUPABASE_CLIENT_KEY="${SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_ANON_KEY:-}}"
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_CLIENT_KEY}" ]; then
             PREVIEW=true
           elif [[ "${SUPABASE_URL}" =~ (your_|real_project|placeholder|example|dummy) ]] ||
-               [[ "${SUPABASE_ANON_KEY}" =~ (your_|real_publishable|placeholder|example|dummy) ]]; then
+               [[ "${SUPABASE_CLIENT_KEY}" =~ (your_|real_publishable|placeholder|example|dummy) ]]; then
             echo "Supabase repository variables contain placeholders."
             exit 1
           elif [[ "${SUPABASE_URL}" != https://*.supabase.co ]]; then
@@ -79,6 +81,7 @@ jobs:
             --base-href "/CHANSON-A-REPONDRE-UNO/" \
             --dart-define=SUPABASE_URL="${{ vars.SUPABASE_URL }}" \
             --dart-define=SUPABASE_ANON_KEY="${{ vars.SUPABASE_ANON_KEY }}" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ vars.SUPABASE_PUBLISHABLE_KEY }}" \
             --dart-define=AI_BACKEND_URL="${{ vars.AI_BACKEND_URL }}" \
             --dart-define=SKIP_AUTH_FOR_DEVELOPMENT=false \
             --dart-define=APP_BUILD_SHA="${{ github.sha }}"

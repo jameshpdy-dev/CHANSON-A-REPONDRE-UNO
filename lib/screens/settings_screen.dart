@@ -203,9 +203,9 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 title: const Text('Supabase client key'),
                 trailing: Text(
-                  AppConfig.isPlaceholder(AppConfig.supabaseAnonKey)
-                      ? 'Missing or placeholder'
-                      : 'Configured',
+                  AppConfig.isValidSupabaseClientKey(AppConfig.supabaseClientKey)
+                      ? 'Configured'
+                      : 'Missing or placeholder',
                 ),
               ),
               ListTile(

@@ -35,10 +35,12 @@ class ChansonUnoApp extends StatefulWidget {
   const ChansonUnoApp({
     this.aiBackendUrlOverride,
     this.authServiceOverride,
+    this.authenticationInitializationError,
     super.key,
   });
   final String? aiBackendUrlOverride;
   final AuthService? authServiceOverride;
+  final String? authenticationInitializationError;
   @override
   State<ChansonUnoApp> createState() => _ChansonUnoAppState();
 }
@@ -57,8 +59,8 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
   late final startupVideo = StartupVideoProvider(StartupVideoStorage(storage))
     ..initialize();
   late final CardAiProvider cardAi;
-  late final AuthService? authService;
-  AuthController? auth;
+  late final AuthService authService;
+  late final AuthController auth;
 
   String get effectiveBackendUrl => AppConfig.normalizeAiBackendUrl(
     widget.aiBackendUrlOverride ?? AppConfig.rawAiBackendUrl,
@@ -71,25 +73,23 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
         widget.authServiceOverride ??
         (widget.aiBackendUrlOverride != null
             ? _TestAuthService()
-            : AppConfig.hasAuthConfiguration
+            : AppConfig.hasAuthConfiguration &&
+                  widget.authenticationInitializationError == null
             ? SupabaseAuthService(Supabase.instance.client)
-            : AppConfig.shouldSkipAuthentication
-            ? _DevelopmentUiAuthService()
             : _DevelopmentUiAuthService());
-    if (authService != null) {
-      auth = AuthController(
-        authService!,
-        developmentBypassEnabled:
-            AppConfig.shouldSkipAuthentication &&
-            widget.authServiceOverride == null &&
-            widget.aiBackendUrlOverride == null,
-        configurationError:
-            !AppConfig.hasAuthConfiguration &&
-            !AppConfig.shouldSkipAuthentication &&
-            widget.authServiceOverride == null &&
-            widget.aiBackendUrlOverride == null,
-      );
-    }
+    auth = AuthController(
+      authService,
+      developmentBypassEnabled:
+          AppConfig.shouldSkipAuthentication &&
+          widget.authServiceOverride == null &&
+          widget.aiBackendUrlOverride == null,
+      configurationError:
+          ((!AppConfig.hasAuthConfiguration &&
+              !AppConfig.shouldSkipAuthentication &&
+              widget.authServiceOverride == null &&
+              widget.aiBackendUrlOverride == null) ||
+          widget.authenticationInitializationError != null),
+    );
     cardAi = CardAiProvider(
       service: CardAiApiService(
         client: AiRestClient(
@@ -135,7 +135,7 @@ class _ChansonUnoAppState extends State<ChansonUnoApp> {
     }
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: auth!),
+        ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: decks),
         ChangeNotifierProvider.value(value: game),

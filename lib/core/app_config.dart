@@ -15,6 +15,10 @@ class AppConfig {
     'SUPABASE_ANON_KEY',
     defaultValue: '',
   );
+  static const supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: '',
+  );
   static const skipAuthForDevelopment = bool.fromEnvironment(
     'SKIP_AUTH_FOR_DEVELOPMENT',
     defaultValue: false,
@@ -32,7 +36,13 @@ class AppConfig {
 
   static bool get hasAuthConfiguration =>
       isValidSupabaseUrl(supabaseUrl) &&
-      isValidSupabaseClientKey(supabaseAnonKey);
+      isValidSupabaseClientKey(supabaseClientKey);
+
+  static String get supabaseClientKey {
+    final publishable = supabasePublishableKey.trim();
+    if (publishable.isNotEmpty) return publishable;
+    return supabaseAnonKey.trim();
+  }
 
   static bool isPlaceholder(String value) {
     final normalized = value.trim().toLowerCase();
