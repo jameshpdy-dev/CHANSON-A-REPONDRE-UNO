@@ -14,7 +14,6 @@ void main() {
     WidgetTester tester,
     _ProfileAuthService auth,
   ) async {
-    AppRouter.router.go(AppRoutes.profile);
     await tester.pumpWidget(
       ChansonUnoApp(
         aiBackendUrlOverride: 'https://api.test',
@@ -22,6 +21,9 @@ void main() {
       ),
     );
     await tester.pump();
+    AppRouter.router.go(AppRoutes.profile);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   Future<void> tapVisible(WidgetTester tester, Finder finder) async {
