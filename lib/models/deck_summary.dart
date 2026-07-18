@@ -1,4 +1,5 @@
 import 'card_item.dart';
+import '../data/chanson_a_repondre_uno_deck.dart';
 
 /// Summarizes a deck derived from the currently loaded card collection.
 class DeckSummary {
@@ -30,6 +31,9 @@ class DeckSummary {
   }
 
   static String _formatTitle(String id) {
+    if (id == chansonARepondreUnoDeckId) {
+      return chansonARepondreUnoDeckName;
+    }
     return id
         .split(RegExp('[-_]'))
         .where((part) => part.isNotEmpty)

@@ -3,6 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../data/chanson_a_repondre_uno_deck.dart';
 import '../models/deck_summary.dart';
 import '../providers/cards_provider.dart';
 
@@ -89,8 +90,7 @@ class _DeckTile extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () =>
-            context.go('/cards?deck=${Uri.encodeQueryComponent(deck.id)}'),
+        onTap: () => context.go('/decks/${Uri.encodeComponent(deck.id)}'),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
@@ -101,6 +101,13 @@ class _DeckTile extends StatelessWidget {
               Text(deck.title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 6),
               Text('${deck.cardCount} cards'),
+              if (deck.id == chansonARepondreUnoDeckId) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Permanent deck',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ],
               const SizedBox(height: 16),
               Wrap(
                 spacing: 6,

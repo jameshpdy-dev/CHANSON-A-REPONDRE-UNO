@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _PathItem('Choose Deck', '/decks', Icons.style_rounded),
     _PathItem('Browse Cards', '/cards', Icons.menu_book_rounded),
     _PathItem('Search', '/search', Icons.search_rounded),
+    _PathItem('Diagnostics', '/diagnostics', Icons.monitor_heart_rounded),
     _PathItem('Journal', '/journal', Icons.book_rounded),
     _PathItem('AI Chat', '/ai-chat', Icons.smart_toy_rounded),
     _PathItem('Rules', '/rules', Icons.gavel_rounded),
@@ -64,10 +65,15 @@ class _HomeScreenState extends State<HomeScreen> {
       body: FocusableActionDetector(
         focusNode: _focusNode,
         shortcuts: <ShortcutActivator, Intent>{
-          const SingleActivator(LogicalKeyboardKey.arrowDown): const _MoveIntent(1),
-          const SingleActivator(LogicalKeyboardKey.arrowUp): const _MoveIntent(-1),
-          const SingleActivator(LogicalKeyboardKey.enter): const ActivateIntent(),
-          const SingleActivator(LogicalKeyboardKey.space): const ActivateIntent(),
+          const SingleActivator(LogicalKeyboardKey.arrowDown):
+              const _MoveIntent(1),
+          const SingleActivator(LogicalKeyboardKey.arrowUp): const _MoveIntent(
+            -1,
+          ),
+          const SingleActivator(LogicalKeyboardKey.enter):
+              const ActivateIntent(),
+          const SingleActivator(LogicalKeyboardKey.space):
+              const ActivateIntent(),
         },
         actions: <Type, Action<Intent>>{
           _MoveIntent: CallbackAction<_MoveIntent>(
@@ -239,7 +245,11 @@ class _PathButtonState extends State<_PathButton> {
                 else
                   const SizedBox(width: 3),
                 const SizedBox(width: 14),
-                Icon(widget.item.icon, color: const Color(0xFFF4E8CC), size: 22),
+                Icon(
+                  widget.item.icon,
+                  color: const Color(0xFFF4E8CC),
+                  size: 22,
+                ),
                 const SizedBox(width: 10),
                 Text(
                   widget.item.label,

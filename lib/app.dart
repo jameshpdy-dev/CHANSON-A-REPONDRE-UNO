@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/app_router.dart';
 import 'providers/cards_provider.dart';
 import 'providers/deck_provider.dart';
+import 'repositories/card_repository.dart';
 import 'services/asset_card_repository.dart';
 import 'services/deck_import_service.dart';
 import 'services/deck_storage_service.dart';
@@ -12,7 +13,9 @@ import 'theme/app_theme.dart';
 /// Configures the application-level Material theme and metadata.
 class ChansonARepondreUnoApp extends StatelessWidget {
   /// Creates the root application widget.
-  const ChansonARepondreUnoApp({super.key});
+  const ChansonARepondreUnoApp({super.key, this.cardRepository});
+
+  final CardRepository? cardRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +24,7 @@ class ChansonARepondreUnoApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (context) =>
-              CardsProvider(AssetCardRepository())..load(),
+              CardsProvider(cardRepository ?? AssetCardRepository())..load(),
         ),
         ChangeNotifierProvider(
           create: (context) =>

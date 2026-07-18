@@ -2,7 +2,9 @@ name: Deploy Flutter Web to GitHub Pages
 
 on:
   push:
-    branches: [feature/persistent-100-card-import]
+    branches:
+      - agent/root-100-card-webapp
+      - feature/persistent-100-card-import
   workflow_dispatch:
 
 permissions:
@@ -44,6 +46,7 @@ jobs:
           flutter build web
           --release
           --base-href "${{ env.GITHUB_PAGES_BASE_HREF }}"
+          --dart-define=APP_BUILD_SHA=${{ github.sha }}
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload website

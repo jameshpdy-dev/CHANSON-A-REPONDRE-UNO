@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+
+import '../data/chanson_a_repondre_uno_deck.dart';
 import '../models/card_item.dart';
 import '../repositories/card_repository.dart';
 
@@ -23,6 +25,12 @@ class CardsProvider extends ChangeNotifier {
   /// A display-safe error message when loading fails.
   String? get errorMessage => _errorMessage;
   int get importedCount => _cards.where((card) => card.isImported).length;
+  int get bundledCount => _cards
+      .where(
+        (card) => card.deckId == chansonARepondreUnoDeckId && !card.isImported,
+      )
+      .length;
+  int get visibleCount => _cards.length;
   bool get isImporting => _importTotal > 0;
   int get importCompleted => _importCompleted;
   int get importTotal => _importTotal;
@@ -40,7 +48,7 @@ class CardsProvider extends ChangeNotifier {
     try {
       _cards = await _repository.loadCards();
     } on FormatException {
-      _errorMessage = 'The card collection could not be read.';
+      _errorMessage = 'Permanent deck could not be loaded.';
     } catch (_) {
       _errorMessage = 'The card collection could not be loaded.';
     } finally {

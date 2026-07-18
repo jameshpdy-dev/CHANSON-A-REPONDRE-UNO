@@ -51,10 +51,7 @@ class CardItem {
       emotion: json['emotion'] as String?,
       theme: json['theme'] as String?,
       country: json['country'] as String?,
-      source: CardSource.values.firstWhere(
-        (value) => value.name == json['source'],
-        orElse: () => CardSource.bundled,
-      ),
+      source: CardSourceX.parse(json['source'] as String?),
       originalFilename: json['originalFilename'] as String?,
       thumbnail: json['thumbnail'] as String?,
       mimeType: json['mimeType'] as String?,
@@ -197,3 +194,16 @@ class CardItem {
 }
 
 enum CardSource { bundled, imported }
+
+extension CardSourceX on CardSource {
+  static CardSource parse(String? value) {
+    if (value == null || value.isEmpty) {
+      return CardSource.bundled;
+    }
+    return switch (value) {
+      'bundled' => CardSource.bundled,
+      'imported' => CardSource.imported,
+      _ => throw FormatException('Unknown card source value: $value'),
+    };
+  }
+}

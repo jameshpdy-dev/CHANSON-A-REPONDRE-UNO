@@ -150,7 +150,7 @@ class AssetCardRepository implements CardRepository {
       chansonARepondreUnoManifestPath,
     );
     final decoded = jsonDecode(source) as List<dynamic>;
-    return decoded
+    final cards = decoded
         .map((item) {
           final json = item as Map<String, dynamic>;
           final sequence = json['sequence'] as int;
@@ -182,6 +182,20 @@ class AssetCardRepository implements CardRepository {
           );
         })
         .toList(growable: false);
+    assert(cards.length == chansonARepondreUnoCardCount);
+    assert(cards.map((card) => card.id).toSet().length == cards.length);
+    if (cards.length != chansonARepondreUnoCardCount) {
+      throw FormatException(
+        'Expected $chansonARepondreUnoCardCount permanent cards, '
+        'found ${cards.length}.',
+      );
+    }
+    if (cards.map((card) => card.id).toSet().length != cards.length) {
+      throw const FormatException(
+        'Permanent deck contains duplicate card IDs.',
+      );
+    }
+    return cards;
   }
 
   static String _extension(String filename) =>
