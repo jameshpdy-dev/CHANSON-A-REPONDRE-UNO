@@ -1,82 +1,72 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/deck_model.dart';
-import '../theme/app_theme.dart';
-import 'stored_image.dart';
 
+/// Displays an imported deck with cover, count, and direct actions.
 class DeckTile extends StatelessWidget {
+  /// Creates an imported deck tile.
   const DeckTile({
     required this.deck,
-    required this.selected,
-    required this.onSelect,
-    required this.onRename,
+    required this.onOpen,
     required this.onDelete,
     super.key,
   });
-  final Deck deck;
-  final bool selected;
-  final VoidCallback onSelect;
-  final VoidCallback onRename;
+
+  /// The deck displayed by this tile.
+  final DeckModel deck;
+
+  /// Opens the deck gallery.
+  final VoidCallback onOpen;
+
+  /// Requests deck deletion.
   final VoidCallback onDelete;
   @override
   Widget build(BuildContext context) => Card(
     clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: onSelect,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: deck.coverPath.isEmpty
-                ? const Icon(
-                    Icons.style_rounded,
-                    size: 52,
-                    color: AppTheme.gold,
-                  )
-                : StoredImage(
-                    source: deck.coverPath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        const Icon(Icons.broken_image_outlined, size: 48),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 4, 6),
-            child: Row(
-              children: [
-                if (selected)
-                  const Icon(
-                    Icons.check_circle,
-                    color: AppTheme.brightGold,
-                    size: 18,
-                  ),
-                if (selected) const SizedBox(width: 6),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        deck.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text('${deck.cards.length} cards'),
-                    ],
-                  ),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 78,
+          height: 108,
+          child: deck.cards.isEmpty
+              ? const Icon(Icons.style_rounded)
+              : Image.file(
+                  File(deck.cards.first.path),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) =>
+                      const Icon(Icons.broken_image_outlined),
                 ),
-                PopupMenuButton<String>(
-                  onSelected: (value) =>
-                      value == 'rename' ? onRename() : onDelete(),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'rename', child: Text('Rename')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(deck.name, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text('${deck.cards.length} PNG cards'),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: onOpen,
+                      child: const Text('Open'),
+                    ),
+                    IconButton(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Delete deck',
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }

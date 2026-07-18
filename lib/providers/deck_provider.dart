@@ -1,148 +1,78 @@
-import 'dart:convert';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 
-import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../services/deck_import_service.dart';
-import '../services/local_storage_service.dart';
+import '../services/deck_storage_service.dart';
 
+/// Provides imported PNG decks and their persistence operations to the UI.
 class DeckProvider extends ChangeNotifier {
+  /// Creates the deck state controller.
   DeckProvider(this._storage, this._importer);
-  final LocalStorageService _storage;
-  final DeckImportService _importer;
-  static const _uuid = Uuid();
-  static const _decksKey = 'decks';
-  static const _activeKey = 'active_deck';
 
-  List<Deck> _decks = [];
-  String? _activeDeckId;
-  bool _loading = true;
+  final DeckStorageService _storage;
+  final DeckImportService _importer;
+  List<DeckModel> _decks = const [];
+  bool _busy = false;
   String? _error;
 
-  List<Deck> get decks => List.unmodifiable(_decks);
-  bool get loading => _loading;
-  String? get error => _error;
-  String? get activeDeckId => _activeDeckId;
-  Deck? get activeDeck =>
-      _decks.where((deck) => deck.id == _activeDeckId).firstOrNull;
-  List<CardImageModel> get cards =>
-      _decks.expand((deck) => deck.cards).toList();
+  /// The saved imported decks.
+  List<DeckModel> get decks => List.unmodifiable(_decks);
 
+  /// Whether a storage operation is active.
+  bool get busy => _busy;
+
+  /// The latest user-safe error.
+  String? get error => _error;
+
+  /// Restores deck metadata on app startup.
   Future<void> load() async {
+    _busy = true;
+    notifyListeners();
     try {
-      final source = await _storage.read(_decksKey);
-      if (source != null) {
-        _decks = (jsonDecode(source) as List<dynamic>)
-            .whereType<Map<String, dynamic>>()
-            .map(Deck.fromJson)
-            .toList();
-      }
-      _activeDeckId = await _storage.read(_activeKey);
-      if (activeDeck == null) _activeDeckId = _decks.firstOrNull?.id;
-    } on Object catch (error) {
-      _decks = [];
-      _error = 'Stored decks could not be loaded: $error';
+      _decks = await _storage.loadDecks();
+    } catch (_) {
+      _error = 'Imported decks could not be loaded.';
+    }
+    _busy = false;
+    notifyListeners();
+  }
+
+  /// Imports selected PNG files as one named deck.
+  Future<bool> importDeck(String name, List<PlatformFile> files) async {
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final deck = await _importer.importDeck(deckName: name, files: files);
+      _decks = [..._decks, deck];
+      await _storage.saveDecks(_decks);
+      return true;
+    } on FormatException catch (error) {
+      _error = error.message;
+      return false;
+    } catch (_) {
+      _error = 'The PNG deck could not be imported.';
+      return false;
     } finally {
-      _loading = false;
+      _busy = false;
       notifyListeners();
     }
   }
 
-  Future<void> _persist() async {
-    await _storage.write(
-      _decksKey,
-      _decks.map((deck) => deck.toJson()).toList(),
-    );
-    if (_activeDeckId != null) await _storage.write(_activeKey, _activeDeckId!);
+  /// Removes a deck's metadata and copied PNG directory.
+  Future<void> deleteDeck(DeckModel deck) async {
+    _busy = true;
     notifyListeners();
-  }
-
-  Future<void> select(String id) async {
-    _activeDeckId = id;
-    await _persist();
-  }
-
-  Future<void> create(String name) async {
-    if (name.trim().isEmpty) return;
-    final deck = Deck(
-      id: _uuid.v4(),
-      name: name.trim(),
-      createdAt: DateTime.now(),
-    );
-    _decks = [..._decks, deck];
-    _activeDeckId ??= deck.id;
-    await _persist();
-  }
-
-  Future<void> import(String name, List<PlatformFile> files) async {
-    final deck = await _importer.import(name, files);
-    _decks = [..._decks, deck];
-    _activeDeckId = deck.id;
-    await _persist();
-  }
-
-  Future<void> rename(String id, String name) async {
-    if (name.trim().isEmpty) return;
-    _decks = _decks
-        .map((deck) => deck.id == id ? deck.copyWith(name: name.trim()) : deck)
-        .toList();
-    await _persist();
-  }
-
-  Future<void> delete(String id) async {
-    final deck = _decks.where((item) => item.id == id).firstOrNull;
-    if (deck == null) return;
-    await _importer.deleteFiles(deck);
-    _decks = _decks.where((item) => item.id != id).toList();
-    if (_activeDeckId == id) _activeDeckId = _decks.firstOrNull?.id;
-    await _persist();
-  }
-
-  Future<void> toggleFavourite(String cardId) async {
-    _decks = _decks
-        .map(
-          (deck) => deck.copyWith(
-            cards: deck.cards
-                .map(
-                  (card) => card.id == cardId
-                      ? card.copyWith(isFavourite: !card.isFavourite)
-                      : card,
-                )
-                .toList(),
-          ),
-        )
-        .toList();
-    await _persist();
-  }
-
-  CardImageModel? cardById(String cardId) =>
-      cards.where((card) => card.id == cardId).firstOrNull;
-
-  Deck? deckForCard(String cardId) => _decks
-      .where((deck) => deck.cards.any((card) => card.id == cardId))
-      .firstOrNull;
-
-  Future<void> updateCard(CardImageModel updated) async {
-    _decks = _decks
-        .map(
-          (deck) => deck.copyWith(
-            cards: deck.cards
-                .map((card) => card.id == updated.id ? updated : card)
-                .toList(),
-            coverPath: deck.cards.firstOrNull?.id == updated.id
-                ? updated.path
-                : deck.coverPath,
-          ),
-        )
-        .toList();
-    await _persist();
-  }
-
-  Future<void> deleteAiData(String cardId) async {
-    final card = cardById(cardId);
-    if (card != null) await updateCard(card.copyWith(clearAiData: true));
+    try {
+      await _storage.deleteDeckFiles(deck.id);
+      _decks = _decks
+          .where((item) => item.id != deck.id)
+          .toList(growable: false);
+      await _storage.saveDecks(_decks);
+    } finally {
+      _busy = false;
+      notifyListeners();
+    }
   }
 }

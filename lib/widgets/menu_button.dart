@@ -1,88 +1,63 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
-
-/// Reusable Material menu control with pointer and touch feedback.
-class MenuButton extends StatefulWidget {
+/// A responsive, vintage-styled action button for the home menu.
+class MenuButton extends StatelessWidget {
+  /// Creates a menu button with an icon, label, and action.
   const MenuButton({
-    required this.label,
     required this.icon,
+    required this.label,
     required this.onPressed,
     super.key,
   });
 
-  final String label;
+  /// The visual cue associated with the destination.
   final IconData icon;
+
+  /// The text displayed in the button.
+  final String label;
+
+  /// Invoked when the button is pressed.
   final VoidCallback onPressed;
 
   @override
-  State<MenuButton> createState() => _MenuButtonState();
-}
-
-class _MenuButtonState extends State<MenuButton> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final borderColor = _isHovered ? AppTheme.brightGold : AppTheme.gold;
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: _isHovered ? const Color(0xE6292115) : const Color(0xCC14110C),
-          border: Border.all(color: borderColor, width: _isHovered ? 2 : 1.25),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: _isHovered
-              ? const [BoxShadow(color: Color(0x55FFC928), blurRadius: 14)]
-              : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: widget.onPressed,
-            splashColor: AppTheme.gold.withValues(alpha: 0.28),
-            highlightColor: AppTheme.gold.withValues(alpha: 0.12),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxHeight < 100;
-                final icon = Icon(
-                  widget.icon,
-                  color: AppTheme.brightGold,
-                  size: compact ? 24 : 30,
-                );
-                final label = Flexible(
-                  child: Text(
-                    widget.label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                );
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 8 : 10,
-                    vertical: compact ? 6 : 12,
-                  ),
-                  child: compact
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [icon, const SizedBox(width: 8), label],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [icon, const SizedBox(height: 8), label],
-                        ),
-                );
-              },
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 21),
+        label: Text(label, overflow: TextOverflow.ellipsis),
+        style: ButtonStyle(
+          alignment: Alignment.centerLeft,
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 16),
+          ),
+          foregroundColor: const WidgetStatePropertyAll(Color(0xFFFFE7AC)),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return const Color(0xFF604514).withValues(alpha: 0.92);
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return const Color(0xFF926C22).withValues(alpha: 0.95);
+            }
+            return const Color(0xFF120E09).withValues(alpha: 0.78);
+          }),
+          overlayColor: const WidgetStatePropertyAll(Color(0x33FFE1A0)),
+          side: WidgetStateProperty.resolveWith((states) {
+            return BorderSide(
+              color: states.contains(WidgetState.hovered)
+                  ? const Color(0xFFFFD66D)
+                  : const Color(0xFFD5A53C),
+              width: states.contains(WidgetState.hovered) ? 1.5 : 1,
+            );
+          }),
+          shape: const WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
         ),
       ),

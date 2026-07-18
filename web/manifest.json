@@ -1,6 +1,6 @@
 {
-    "name": "uno_chanson_2",
-    "short_name": "uno_chanson_2",
+    "name": "uno2",
+    "short_name": "uno2",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

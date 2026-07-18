@@ -1,23 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../core/app_router.dart';
-import '../providers/deck_provider.dart';
-import '../providers/game_provider.dart';
-import '../providers/home_experience_provider.dart';
-import '../theme/app_theme.dart';
-import '../widgets/app_bottom_navigation.dart';
-import '../widgets/continue_progress_panel.dart';
-import '../widgets/interactive_curtain_overlay.dart';
-import '../widgets/deck_carousel.dart';
-import '../widgets/home_menu_card.dart';
-import '../widgets/recent_cards.dart';
-import '../widgets/home_header.dart';
-import '../widgets/home_3d_video_viewport.dart';
-import '../widgets/home_intro_controls.dart';
-
+/// Displays the poster-led landing page with a visible path menu overlay.
 class HomeScreen extends StatefulWidget {
+  /// Creates the application home screen.
   const HomeScreen({super.key});
 
   @override
@@ -25,256 +14,246 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _menuBackgroundAsset =
-      'assets/images/main_menu_background.png';
-
-  static const _cardAlignments = <Alignment>[
-    Alignment.topLeft,
-    Alignment.topCenter,
-    Alignment.topRight,
-    Alignment.centerLeft,
-    Alignment.center,
-    Alignment.centerRight,
-    Alignment.bottomLeft,
-    Alignment.bottomRight,
+  static const _items = <_PathItem>[
+    _PathItem('Play', '/play', Icons.play_arrow_rounded),
+    _PathItem('Choose Deck', '/decks', Icons.style_rounded),
+    _PathItem('Browse Cards', '/cards', Icons.menu_book_rounded),
+    _PathItem('Search', '/search', Icons.search_rounded),
+    _PathItem('Journal', '/journal', Icons.book_rounded),
+    _PathItem('AI Chat', '/ai-chat', Icons.smart_toy_rounded),
+    _PathItem('Rules', '/rules', Icons.gavel_rounded),
+    _PathItem('Settings', '/settings', Icons.settings_rounded),
   ];
 
-  static const _overlayOpacities = <double>[
-    .52,
-    .58,
-    .58,
-    .52,
-    .52,
-    .52,
-    .52,
-    .52,
-  ];
+  static const _gold = Color(0xFFEBC36B);
 
-  bool _backgroundPrecached = false;
-
-  static const _items = <_HomeItem>[
-    _HomeItem(
-      Icons.play_arrow_rounded,
-      'Play',
-      'Jouer une nouvelle partie ou continuer une partie existante.',
-      AppRoutes.play,
-      Color(0xFFE43C2C),
-    ),
-    _HomeItem(
-      Icons.style_rounded,
-      'Choose Deck',
-      'Sélectionner, créer ou gérer vos decks de cartes.',
-      AppRoutes.decks,
-      Color(0xFFE9B52F),
-    ),
-    _HomeItem(
-      Icons.menu_book_rounded,
-      'Browse Cards',
-      'Explorer toutes les cartes par deck ou catégorie.',
-      AppRoutes.cards,
-      Color(0xFF75B83A),
-    ),
-    _HomeItem(
-      Icons.search_rounded,
-      'Search',
-      'Trouver des cartes par mot-clé, thème, auteur et plus encore.',
-      AppRoutes.search,
-      Color(0xFF2EA4DC),
-    ),
-    _HomeItem(
-      Icons.book_rounded,
-      'Journal',
-      'Consulter vos entrées, notes et souvenirs enregistrés.',
-      AppRoutes.journal,
-      Color(0xFFC85AD9),
-    ),
-    _HomeItem(
-      Icons.smart_toy_rounded,
-      'AI Chat',
-      'Discuter avec l’IA à propos des cartes et de vos idées.',
-      AppRoutes.aiChat,
-      Color(0xFF35C9C5),
-    ),
-    _HomeItem(
-      Icons.gavel_rounded,
-      'Rules',
-      'Apprendre les règles du jeu et découvrir des variantes.',
-      AppRoutes.rules,
-      Color(0xFFE87524),
-    ),
-    _HomeItem(
-      Icons.settings_rounded,
-      'Settings',
-      'Personnaliser votre expérience de jeu et vos préférences.',
-      AppRoutes.settings,
-      Color(0xFFC8B79B),
-    ),
-  ];
+  final FocusNode _focusNode = FocusNode(debugLabel: 'home-menu');
+  int _activeIndex = 0;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_backgroundPrecached) return;
-    _backgroundPrecached = true;
-    precacheImage(const AssetImage(_menuBackgroundAsset), context);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _moveSelection(int delta) {
+    setState(() {
+      _activeIndex = (_activeIndex + delta) % _items.length;
+      if (_activeIndex < 0) _activeIndex += _items.length;
+    });
+  }
+
+  void _activateSelection() {
+    context.go(_items[_activeIndex].path);
   }
 
   @override
   Widget build(BuildContext context) {
-    final decks = context.watch<DeckProvider>();
-    final game = context.watch<GameProvider>().state;
-    final experience = context.watch<HomeExperienceProvider>();
-    final homeInteractive = experience.homeInteractive;
-    final continueDeck = game == null
-        ? null
-        : decks.decks.where((deck) => deck.id == game.deckId).firstOrNull;
-    final recent = [...decks.cards]
-      ..sort((a, b) => b.importedAt.compareTo(a.importedAt));
+    final width = MediaQuery.sizeOf(context).width;
+    final panelWidth = width < 700 ? width * 0.88 : 340.0;
 
     return Scaffold(
-      backgroundColor: AppTheme.ink,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/main_street_background.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stackTrace) =>
-                  const ColoredBox(color: Color(0xFF090503)),
-            ),
+      body: FocusableActionDetector(
+        focusNode: _focusNode,
+        shortcuts: <ShortcutActivator, Intent>{
+          const SingleActivator(LogicalKeyboardKey.arrowDown): const _MoveIntent(1),
+          const SingleActivator(LogicalKeyboardKey.arrowUp): const _MoveIntent(-1),
+          const SingleActivator(LogicalKeyboardKey.enter): const ActivateIntent(),
+          const SingleActivator(LogicalKeyboardKey.space): const ActivateIntent(),
+        },
+        actions: <Type, Action<Intent>>{
+          _MoveIntent: CallbackAction<_MoveIntent>(
+            onInvoke: (intent) {
+              _moveSelection(intent.delta);
+              return null;
+            },
           ),
-          IgnorePointer(
-            ignoring: !homeInteractive,
-            child: SafeArea(
-              bottom: false,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 500),
-                builder: (context, opacity, child) =>
-                    Opacity(opacity: opacity, child: child),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final width = constraints.maxWidth;
-                    final columns = width >= 1050
-                        ? 4
-                        : width >= 650
-                        ? 3
-                        : 2;
-                    final horizontal = width >= 900 ? 28.0 : 14.0;
-                    return SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontal,
-                        12,
-                        horizontal,
-                        28,
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (intent) {
+              _activateSelection();
+              return null;
+            },
+          ),
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset('assets/images/home_background.png', fit: BoxFit.cover),
+            const ColoredBox(color: Color(0x73000000)),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      width: panelWidth,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xD10E0B0D),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _gold.withAlpha(160)),
                       ),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1240),
-                          child: Column(
-                            children: [
-                              HomeHeader(
-                                onProfile: () => context.go('/profile'),
-                                onSettings: () =>
-                                    context.go(AppRoutes.settings),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'CHOOSE YOUR PATH',
+                              style: TextStyle(
+                                color: _gold,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
                               ),
-                              const SizedBox(height: 18),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _items.length,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      crossAxisSpacing: 14,
-                                      mainAxisSpacing: 14,
-                                      childAspectRatio: width < 500
-                                          ? .85
-                                          : width < 900
-                                          ? 1.0
-                                          : 1.12,
-                                    ),
-                                itemBuilder: (context, index) {
-                                  final item = _items[index];
-                                  return HomeMenuCard(
-                                    icon: item.icon,
-                                    title: item.title,
-                                    description: item.description,
-                                    accent: item.accent,
-                                    backgroundAsset: _menuBackgroundAsset,
-                                    backgroundAlignment:
-                                        _cardAlignments[index],
-                                    overlayOpacity:
-                                        _overlayOpacities[index],
-                                    onTap: () => context.go(item.route),
-                                  );
-                                },
+                            ),
+                            const SizedBox(height: 14),
+                            for (var i = 0; i < _items.length; i++)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _PathButton(
+                                  item: _items[i],
+                                  isActive: i == _activeIndex,
+                                  onHover: () =>
+                                      setState(() => _activeIndex = i),
+                                  onTap: () {
+                                    setState(() => _activeIndex = i);
+                                    context.go(_items[i].path);
+                                  },
+                                ),
                               ),
-                              const SizedBox(height: 18),
-                              ContinueProgressPanel(
-                                deck: continueDeck,
-                                game: game,
-                                onContinue: () => context.go(AppRoutes.play),
-                              ),
-                              const SizedBox(height: 18),
-                              DeckCarousel(
-                                decks: decks.decks.take(10).toList(),
-                                onDeckTap: (deck) async {
-                                  await decks.select(deck.id);
-                                  if (context.mounted) {
-                                    context.go(AppRoutes.deck(deck.id));
-                                  }
-                                },
-                                onViewAll: () => context.go(AppRoutes.decks),
-                              ),
-                              const SizedBox(height: 18),
-                              RecentCards(
-                                cards: recent.take(12).toList(),
-                                onCardTap: (card) =>
-                                    context.go(AppRoutes.cardAlias(card.id)),
-                                onViewAll: () => context.go(AppRoutes.cards),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-          const InteractiveCurtainOverlay(),
-          const Home3dVideoViewport(),
-          const HomeIntroControls(),
-        ],
-      ),
-      bottomNavigationBar: IgnorePointer(
-        ignoring: !homeInteractive,
-        child: AnimatedOpacity(
-          opacity: homeInteractive ? 1 : .45,
-          duration: const Duration(milliseconds: 180),
-          child: const AppBottomNavigation(),
+          ],
         ),
       ),
     );
   }
 }
 
-class _HomeItem {
-  const _HomeItem(
-    this.icon,
-    this.title,
-    this.description,
-    this.route,
-    this.accent,
-  );
+class _MoveIntent extends Intent {
+  const _MoveIntent(this.delta);
+
+  final int delta;
+}
+
+class _PathItem {
+  const _PathItem(this.label, this.path, this.icon);
+
+  final String label;
+  final String path;
   final IconData icon;
-  final String title;
-  final String description;
-  final String route;
-  final Color accent;
+}
+
+class _PathButton extends StatefulWidget {
+  const _PathButton({
+    required this.item,
+    required this.isActive,
+    required this.onTap,
+    required this.onHover,
+  });
+
+  final _PathItem item;
+  final bool isActive;
+  final VoidCallback onTap;
+  final VoidCallback onHover;
+
+  @override
+  State<_PathButton> createState() => _PathButtonState();
+}
+
+class _PathButtonState extends State<_PathButton> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = _HomeScreenState._gold;
+    final bg = widget.isActive
+        ? const Color(0xCC8A2A33)
+        : _hovered
+        ? const Color(0xCC8A2A1F)
+        : const Color(0x1AFFFFFF);
+
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _hovered = true);
+        widget.onHover();
+      },
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 100),
+          scale: _pressed ? 0.98 : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 58,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: gold.withAlpha(170)),
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: gold.withAlpha(110),
+                        blurRadius: 10,
+                        spreadRadius: 0.5,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                if (widget.isActive)
+                  Container(
+                    width: 3,
+                    height: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF8A22A3),
+                      borderRadius: BorderRadius.horizontal(
+                        left: Radius.circular(14),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox(width: 3),
+                const SizedBox(width: 14),
+                Icon(widget.item.icon, color: const Color(0xFFF4E8CC), size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  widget.item.label,
+                  style: const TextStyle(
+                    color: Color(0xFFF4E8CC),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
