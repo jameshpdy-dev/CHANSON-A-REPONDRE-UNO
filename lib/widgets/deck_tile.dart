@@ -25,18 +25,7 @@ class DeckTile extends StatelessWidget {
     clipBehavior: Clip.antiAlias,
     child: Row(
       children: [
-        SizedBox(
-          width: 78,
-          height: 108,
-          child: deck.cards.isEmpty
-              ? const Icon(Icons.style_rounded)
-              : Image.file(
-                  File(deck.cards.first.path),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) =>
-                      const Icon(Icons.broken_image_outlined),
-                ),
-        ),
+        SizedBox(width: 78, height: 108, child: _DeckCover(deck: deck)),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -46,7 +35,14 @@ class DeckTile extends StatelessWidget {
               children: [
                 Text(deck.name, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('${deck.cards.length} PNG cards'),
+                Text('${deck.cards.length} cards'),
+                if (deck.isBundled) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Permanent deck',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -55,11 +51,12 @@ class DeckTile extends StatelessWidget {
                       onPressed: onOpen,
                       child: const Text('Open'),
                     ),
-                    IconButton(
-                      onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Delete deck',
-                    ),
+                    if (deck.isDeletable)
+                      IconButton(
+                        onPressed: onDelete,
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Delete deck',
+                      ),
                   ],
                 ),
               ],
@@ -69,4 +66,31 @@ class DeckTile extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _DeckCover extends StatelessWidget {
+  const _DeckCover({required this.deck});
+
+  final DeckModel deck;
+
+  @override
+  Widget build(BuildContext context) {
+    if (deck.coverAsset case final String asset) {
+      return Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) =>
+            const Icon(Icons.broken_image_outlined),
+      );
+    }
+    if (deck.cards.isEmpty) {
+      return const Icon(Icons.style_rounded);
+    }
+    return Image.file(
+      File(deck.cards.first.path),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stack) =>
+          const Icon(Icons.broken_image_outlined),
+    );
+  }
 }

@@ -51,20 +51,30 @@ class DeckGalleryScreen extends StatelessWidget {
                       builder: (context) => CardFullscreenScreen(
                         cards: deck.cards,
                         initialIndex: index,
+                        useAssetImages: deck.isBundled,
                       ),
                     ),
                   ),
                   child: Column(
                     children: [
                       Expanded(
-                        child: Image.file(
-                          File(card.path),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Center(
-                                child: Icon(Icons.broken_image_outlined),
+                        child: deck.isBundled
+                            ? Image.asset(
+                                card.path,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Center(
+                                      child: Icon(Icons.broken_image_outlined),
+                                    ),
+                              )
+                            : Image.file(
+                                File(card.path),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Center(
+                                      child: Icon(Icons.broken_image_outlined),
+                                    ),
                               ),
-                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8),

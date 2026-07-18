@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:chanson_a_repondre_uno/data/chanson_a_repondre_uno_deck.dart';
 import 'package:chanson_a_repondre_uno/models/card_item.dart';
 import 'package:chanson_a_repondre_uno/repositories/card_repository.dart';
 import 'package:chanson_a_repondre_uno/services/asset_card_repository.dart';
@@ -42,32 +45,34 @@ void main() {
     expect(imported.single.title, 'one');
   });
 
-  test('rejects unsupported, oversized, and unreadable files independently',
-      () async {
-    final result = await repository.importCards([
-      CardImportCandidate(
-        filename: 'bad.gif',
-        bytes: imageBytes,
-        mimeType: 'image/gif',
-      ),
-      CardImportCandidate(
-        filename: 'large.png',
-        bytes: Uint8List(maxCardImageBytes + 1),
-        mimeType: 'image/png',
-      ),
-      CardImportCandidate(
-        filename: 'broken.png',
-        bytes: Uint8List(0),
-        mimeType: 'image/png',
-      ),
-      candidate('good.png'),
-    ]);
+  test(
+    'rejects unsupported, oversized, and unreadable files independently',
+    () async {
+      final result = await repository.importCards([
+        CardImportCandidate(
+          filename: 'bad.gif',
+          bytes: imageBytes,
+          mimeType: 'image/gif',
+        ),
+        CardImportCandidate(
+          filename: 'large.png',
+          bytes: Uint8List(maxCardImageBytes + 1),
+          mimeType: 'image/png',
+        ),
+        CardImportCandidate(
+          filename: 'broken.png',
+          bytes: Uint8List(0),
+          mimeType: 'image/png',
+        ),
+        candidate('good.png'),
+      ]);
 
-    expect(result.imported, 1);
-    expect(result.unsupported, 1);
-    expect(result.tooLarge, 1);
-    expect(result.invalid, 1);
-  });
+      expect(result.imported, 1);
+      expect(result.unsupported, 1);
+      expect(result.tooLarge, 1);
+      expect(result.invalid, 1);
+    },
+  );
 
   test('detects duplicate content', () async {
     final result = await repository.importCards([
@@ -104,7 +109,11 @@ void main() {
     store.cards.add(importedCard('imported'));
     await repository.clearImportedCards();
     final loaded = await repository.loadCards();
-    expect(loaded.single.source, CardSource.bundled);
+    expect(
+      loaded.where((card) => card.source == CardSource.bundled),
+      isNotEmpty,
+    );
+    expect(loaded.where((card) => card.isImported), isEmpty);
   });
 
   test('deletes one imported card', () async {
@@ -113,6 +122,59 @@ void main() {
     await repository.deleteImportedCard(id);
     expect(await store.load(), isEmpty);
   });
+
+  test('loads the permanent 67-card deck in stable order', () async {
+    final cards = await repository.loadCards();
+    final permanent = cards
+        .where((card) => card.deckId == chansonARepondreUnoDeckId)
+        .toList();
+
+    expect(permanent, hasLength(chansonARepondreUnoCardCount));
+    expect(permanent.first.id, 'chanson-a-repondre-uno-001');
+    expect(permanent.last.id, 'chanson-a-repondre-uno-067');
+    expect(permanent.map((card) => card.id).toSet(), hasLength(67));
+    expect(
+      permanent.every((card) => card.source == CardSource.bundled),
+      isTrue,
+    );
+    expect(permanent.every((card) => !card.title.endsWith('.png')), isTrue);
+  });
+
+  test(
+    'bundled deck does not count toward the 100 imported-card limit',
+    () async {
+      store.cards.addAll(
+        List.generate(maxStoredCards, (index) => importedCard('stored-$index')),
+      );
+
+      final cards = await repository.loadCards();
+      final permanent = cards
+          .where((card) => card.deckId == chansonARepondreUnoDeckId)
+          .toList();
+      final imported = cards.where((card) => card.isImported).toList();
+
+      expect(permanent, hasLength(chansonARepondreUnoCardCount));
+      expect(imported, hasLength(maxStoredCards));
+      expect(permanent.length + imported.length, 167);
+    },
+  );
+
+  test('manifest lists exactly the committed permanent PNG assets', () async {
+    final manifestFile = File(chansonARepondreUnoManifestPath);
+    final manifest = jsonDecode(await manifestFile.readAsString()) as List;
+    final pngs = Directory('assets/cards/chanson_a_repondre_uno')
+        .listSync()
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.png'))
+        .toList();
+
+    expect(manifest, hasLength(chansonARepondreUnoCardCount));
+    expect(pngs, hasLength(chansonARepondreUnoCardCount));
+    expect(
+      manifest.map((entry) => (entry as Map<String, dynamic>)['assetPath']),
+      containsAll(pngs.map((file) => file.path.replaceAll('\\', '/'))),
+    );
+  });
 }
 
 final imageBytes = base64Decode(
@@ -120,39 +182,55 @@ final imageBytes = base64Decode(
 );
 
 CardImportCandidate candidate(String name) => CardImportCandidate(
-      filename: name,
-      bytes: imageBytes,
-      mimeType: 'image/png',
-    );
+  filename: name,
+  bytes: imageBytes,
+  mimeType: 'image/png',
+);
 
 CardItem importedCard(String id) => CardItem(
-      id: id,
-      deckId: 'imported',
-      title: id,
-      question: '',
-      answer: '',
-      image: 'memory/$id/original',
-      audio: '',
-      video: '',
-      category: 'Imported',
-      colour: 'black',
-      quote: '',
-      author: '',
-      year: 2026,
-      tags: const [],
-      favorite: false,
-      source: CardSource.imported,
-      thumbnail: 'memory/$id/thumbnail',
-      checksum: id,
-    );
+  id: id,
+  deckId: 'imported',
+  title: id,
+  question: '',
+  answer: '',
+  image: 'memory/$id/original',
+  audio: '',
+  video: '',
+  category: 'Imported',
+  colour: 'black',
+  quote: '',
+  author: '',
+  year: 2026,
+  tags: const [],
+  favorite: false,
+  source: CardSource.imported,
+  thumbnail: 'memory/$id/thumbnail',
+  checksum: id,
+);
 
 class JsonBundle extends CachingAssetBundle {
   @override
   Future<ByteData> load(String key) async {
-    final bytes = utf8.encode(jsonEncode([bundledCard.toJson()]));
+    final payload = key == chansonARepondreUnoManifestPath
+        ? permanentManifest
+        : [bundledCard.toJson()];
+    final bytes = utf8.encode(jsonEncode(payload));
     return ByteData.sublistView(Uint8List.fromList(bytes));
   }
 }
+
+final permanentManifest = List.generate(chansonARepondreUnoCardCount, (index) {
+  final sequence = index + 1;
+  final padded = sequence.toString().padLeft(3, '0');
+  return {
+    'id': 'chanson-a-repondre-uno-$padded',
+    'deckId': chansonARepondreUnoDeckId,
+    'assetPath': 'assets/cards/chanson_a_repondre_uno/card_$padded.png',
+    'displayTitle': 'Card $padded',
+    'source': 'bundled',
+    'sequence': sequence,
+  };
+});
 
 final bundledCard = CardItem(
   id: 'bundled',
@@ -208,10 +286,7 @@ class MemoryImportedCardStore implements ImportedCardStore {
     String id,
     String extension,
   ) async =>
-      (
-        original: 'memory/$id/original',
-        thumbnail: 'memory/$id/thumbnail',
-      );
+      (original: 'memory/$id/original', thumbnail: 'memory/$id/thumbnail');
 
   @override
   Future<void> save(

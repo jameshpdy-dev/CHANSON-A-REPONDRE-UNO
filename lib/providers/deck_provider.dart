@@ -1,6 +1,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
+import '../data/chanson_a_repondre_uno_deck.dart';
+import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../services/deck_import_service.dart';
 import '../services/deck_storage_service.dart';
@@ -17,7 +19,7 @@ class DeckProvider extends ChangeNotifier {
   String? _error;
 
   /// The saved imported decks.
-  List<DeckModel> get decks => List.unmodifiable(_decks);
+  List<DeckModel> get decks => List.unmodifiable([_permanentDeck, ..._decks]);
 
   /// Whether a storage operation is active.
   bool get busy => _busy;
@@ -62,6 +64,11 @@ class DeckProvider extends ChangeNotifier {
 
   /// Removes a deck's metadata and copied PNG directory.
   Future<void> deleteDeck(DeckModel deck) async {
+    if (!deck.isDeletable) {
+      _error = 'Permanent decks cannot be deleted.';
+      notifyListeners();
+      return;
+    }
     _busy = true;
     notifyListeners();
     try {
@@ -75,4 +82,21 @@ class DeckProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  static final DeckModel _permanentDeck = DeckModel(
+    id: chansonARepondreUnoDeckId,
+    name: chansonARepondreUnoDeckName,
+    cards: List.generate(chansonARepondreUnoCardCount, (index) {
+      final sequence = index + 1;
+      return CardImageModel(
+        id: 'chanson-a-repondre-uno-${sequence.toString().padLeft(3, '0')}',
+        title: 'Card ${sequence.toString().padLeft(3, '0')}',
+        path:
+            'assets/cards/chanson_a_repondre_uno/card_${sequence.toString().padLeft(3, '0')}.png',
+      );
+    }, growable: false),
+    createdAt: DateTime(2026),
+    source: DeckSource.bundled,
+    coverAsset: 'assets/cards/chanson_a_repondre_uno/card_001.png',
+  );
 }

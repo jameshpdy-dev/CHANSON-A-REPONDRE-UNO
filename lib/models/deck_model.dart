@@ -8,6 +8,8 @@ class DeckModel {
     required this.name,
     required this.cards,
     required this.createdAt,
+    this.source = DeckSource.imported,
+    this.coverAsset,
   });
 
   /// Recreates a deck from local metadata.
@@ -31,6 +33,12 @@ class DeckModel {
 
   /// The original import time.
   final DateTime createdAt;
+  final DeckSource source;
+  final String? coverAsset;
+
+  bool get isBundled => source == DeckSource.bundled;
+  bool get isEditable => !isBundled;
+  bool get isDeletable => !isBundled;
 
   /// Serializes deck metadata for local persistence.
   Map<String, dynamic> toJson() => {
@@ -40,3 +48,5 @@ class DeckModel {
     'createdAt': createdAt.toIso8601String(),
   };
 }
+
+enum DeckSource { bundled, imported }

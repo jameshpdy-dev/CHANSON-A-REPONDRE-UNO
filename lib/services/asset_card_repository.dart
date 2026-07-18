@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
+import '../data/chanson_a_repondre_uno_deck.dart';
 import '../models/card_item.dart';
 import '../repositories/card_repository.dart';
 import 'imported_card_store.dart';
@@ -12,7 +13,7 @@ import 'imported_card_store.dart';
 class AssetCardRepository implements CardRepository {
   /// Creates an asset-backed card repository.
   AssetCardRepository({this.bundle, ImportedCardStore? importedStore})
-      : _importedStore = importedStore ?? ImportedCardStore();
+    : _importedStore = importedStore ?? ImportedCardStore();
 
   /// An optional bundle used for controlled loading in tests and integrations.
   final AssetBundle? bundle;
@@ -26,7 +27,8 @@ class AssetCardRepository implements CardRepository {
     final decoded = jsonDecode(source) as List<dynamic>;
     final bundled = decoded
         .map((item) => CardItem.fromJson(item as Map<String, dynamic>))
-        .toList(growable: false);
+        .toList();
+    bundled.addAll(await _loadChansonARepondreUnoCards());
     final imported = await _importedStore.load();
     return [...bundled, ...imported];
   }
@@ -37,7 +39,10 @@ class AssetCardRepository implements CardRepository {
     void Function(int completed, int total)? onProgress,
   }) async {
     final stored = await _importedStore.load();
-    final checksums = stored.map((card) => card.checksum).whereType<String>().toSet();
+    final checksums = stored
+        .map((card) => card.checksum)
+        .whereType<String>()
+        .toSet();
     var imported = 0;
     var duplicates = 0;
     var invalid = 0;
@@ -140,15 +145,54 @@ class AssetCardRepository implements CardRepository {
   Future<Uint8List?> readStoredImage(String reference) =>
       _importedStore.read(reference);
 
+  Future<List<CardItem>> _loadChansonARepondreUnoCards() async {
+    final source = await (bundle ?? rootBundle).loadString(
+      chansonARepondreUnoManifestPath,
+    );
+    final decoded = jsonDecode(source) as List<dynamic>;
+    return decoded
+        .map((item) {
+          final json = item as Map<String, dynamic>;
+          final sequence = json['sequence'] as int;
+          final title = json['displayTitle'] as String;
+          return CardItem(
+            id: json['id'] as String,
+            deckId: chansonARepondreUnoDeckId,
+            title: title,
+            question: '$chansonARepondreUnoDeckName permanent card $sequence',
+            answer: '',
+            image: json['assetPath'] as String,
+            audio: '',
+            video: '',
+            category: chansonARepondreUnoDeckName,
+            colour: 'black',
+            quote: '',
+            author: '',
+            year: 2026,
+            tags: [
+              chansonARepondreUnoDeckName,
+              title,
+              'card $sequence',
+              'card ${sequence.toString().padLeft(3, '0')}',
+              'permanent deck',
+              'bundled',
+            ],
+            favorite: false,
+            source: CardSource.bundled,
+          );
+        })
+        .toList(growable: false);
+  }
+
   static String _extension(String filename) =>
       filename.split('.').last.toLowerCase();
 
   static String? _mimeFor(String extension) => switch (extension) {
-        'png' => 'image/png',
-        'jpg' || 'jpeg' => 'image/jpeg',
-        'webp' => 'image/webp',
-        _ => null,
-      };
+    'png' => 'image/png',
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'webp' => 'image/webp',
+    _ => null,
+  };
 
   static bool _mimeMatches(String mime, String extension) {
     final normalized = mime.toLowerCase();
@@ -164,14 +208,20 @@ class AssetCardRepository implements CardRepository {
     final height = frame.image.height;
     frame.image.dispose();
     codec.dispose();
-    final scale = [600 / width, 900 / height, 1.0].reduce((a, b) => a < b ? a : b);
+    final scale = [
+      600 / width,
+      900 / height,
+      1.0,
+    ].reduce((a, b) => a < b ? a : b);
     final resized = await ui.instantiateImageCodec(
       bytes,
       targetWidth: (width * scale).round(),
       targetHeight: (height * scale).round(),
     );
     final resizedFrame = await resized.getNextFrame();
-    final data = await resizedFrame.image.toByteData(format: ui.ImageByteFormat.png);
+    final data = await resizedFrame.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
     resizedFrame.image.dispose();
     resized.dispose();
     if (data == null) throw const FormatException('Unreadable image');

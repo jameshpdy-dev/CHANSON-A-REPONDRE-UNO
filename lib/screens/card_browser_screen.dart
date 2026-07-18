@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../data/chanson_a_repondre_uno_deck.dart';
 import '../models/card_item.dart';
 import '../providers/cards_provider.dart';
 import '../repositories/card_repository.dart';
@@ -144,10 +145,7 @@ class CardBrowserScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _clearImported(
-    BuildContext context,
-    CardsProvider state,
-  ) async {
+  Future<void> _clearImported(BuildContext context, CardsProvider state) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -172,11 +170,11 @@ class CardBrowserScreen extends StatelessWidget {
   }
 
   static String? _mimeFor(String? extension) => switch (extension) {
-        'png' => 'image/png',
-        'jpg' || 'jpeg' => 'image/jpeg',
-        'webp' => 'image/webp',
-        _ => null,
-      };
+    'png' => 'image/png',
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'webp' => 'image/webp',
+    _ => null,
+  };
 
   Widget _buildBody(List<CardItem> cards, CardsProvider cardState) {
     if (cardState.isLoading) {
@@ -188,15 +186,23 @@ class CardBrowserScreen extends StatelessWidget {
     if (cards.isEmpty) {
       return const Center(child: Text('No cards match this deck.'));
     }
-    return ListView.separated(
+    return GridView.builder(
       padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 260,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.66,
+      ),
       itemCount: cards.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) => _CardListTile(card: cards[index]),
     );
   }
 
   static String _formatDeckName(String id) {
+    if (id == chansonARepondreUnoDeckId) {
+      return chansonARepondreUnoDeckName;
+    }
     return id
         .split(RegExp('[-_]'))
         .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
@@ -214,33 +220,60 @@ class _CardListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: ListTile(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: () => context.go('/cards/${Uri.encodeComponent(card.id)}'),
-        leading: SizedBox(
-          width: 52,
-          height: 68,
-          child: card.image.isEmpty
-              ? _CategorySwatch(colour: card.colour)
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: CardArtwork(card: card, thumbnail: true),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  card.image.isEmpty
+                      ? _CategorySwatch(colour: card.colour)
+                      : CardArtwork(
+                          card: card,
+                          thumbnail: true,
+                          fit: BoxFit.contain,
+                        ),
+                  if (card.isImported)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IconButton.filledTonal(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Delete imported card',
+                        onPressed: () => _delete(context),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    card.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    card.isImported ? 'Imported card' : card.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        title: Text(card.title),
-        subtitle: Text(
-          card.question,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: card.isImported
-            ? IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete imported card',
-                onPressed: () => _delete(context),
-              )
-            : card.favorite
-                ? const Icon(Icons.favorite_rounded, color: Color(0xFFD5A53C))
-                : const Icon(Icons.chevron_right_rounded),
       ),
     );
   }

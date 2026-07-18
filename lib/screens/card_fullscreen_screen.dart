@@ -8,6 +8,7 @@ class CardFullscreenScreen extends StatelessWidget {
   const CardFullscreenScreen({
     required this.cards,
     required this.initialIndex,
+    this.useAssetImages = false,
     super.key,
   });
 
@@ -16,26 +17,42 @@ class CardFullscreenScreen extends StatelessWidget {
 
   /// The first visible card index.
   final int initialIndex;
+
+  /// Whether cards should be read from bundled Flutter assets.
+  final bool useAssetImages;
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(),
     body: PageView.builder(
       controller: PageController(initialPage: initialIndex),
       itemCount: cards.length,
-      itemBuilder: (context, index) => InteractiveViewer(
-        minScale: 1,
-        maxScale: 4,
-        child: Center(
-          child: Image.file(
-            File(cards[index].path),
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => const Icon(
-              Icons.broken_image_outlined,
-              size: 64,
-            ),
+      itemBuilder: (context, index) {
+        final card = cards[index];
+        return InteractiveViewer(
+          minScale: 1,
+          maxScale: 4,
+          child: Center(
+            child: useAssetImages
+                ? Image.asset(
+                    card.path,
+                    fit: BoxFit.contain,
+                    errorBuilder: _errorBuilder,
+                  )
+                : Image.file(
+                    File(card.path),
+                    fit: BoxFit.contain,
+                    errorBuilder: _errorBuilder,
+                  ),
           ),
-        ),
-      ),
+        );
+      },
     ),
   );
+
+  static Widget _errorBuilder(
+    BuildContext context,
+    Object error,
+    StackTrace? stackTrace,
+  ) => const Icon(Icons.broken_image_outlined, size: 64);
 }

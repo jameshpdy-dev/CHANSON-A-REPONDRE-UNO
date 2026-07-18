@@ -20,18 +20,19 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<CardsProvider>();
     final normalized = query.trim().toLowerCase();
-    final results = state.cards.where((card) {
-      if (normalized.isEmpty) return true;
-      return [
-        card.title,
-        card.originalFilename ?? '',
-        card.category,
-        card.question,
-        card.answer,
-        card.transcription ?? '',
-        ...card.tags,
-      ].join(' ').toLowerCase().contains(normalized);
-    }).toList(growable: false);
+    final results = state.cards
+        .where((card) {
+          if (normalized.isEmpty) return true;
+          return [
+            card.title,
+            card.category,
+            card.question,
+            card.answer,
+            card.transcription ?? '',
+            ...card.tags,
+          ].join(' ').toLowerCase().contains(normalized);
+        })
+        .toList(growable: false);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Search'),
@@ -57,11 +58,11 @@ class _SearchScreenState extends State<SearchScreen> {
                     padding: const EdgeInsets.all(16),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 240,
-                      childAspectRatio: .72,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
+                          maxCrossAxisExtent: 240,
+                          childAspectRatio: .72,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
                     itemCount: results.length,
                     itemBuilder: (context, index) =>
                         _SearchCard(card: results[index]),
@@ -79,23 +80,23 @@ class _SearchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => context.go('/cards/${Uri.encodeComponent(card.id)}'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: CardArtwork(card: card, thumbnail: true)),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(
-                  card.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: () => context.go('/cards/${Uri.encodeComponent(card.id)}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: CardArtwork(card: card, thumbnail: true)),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Text(
+              card.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

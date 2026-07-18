@@ -20,7 +20,17 @@ class CardArtwork extends StatelessWidget {
     if (!card.isImported) {
       return card.image.isEmpty
           ? const ColoredBox(color: Color(0xFF483619))
-          : Image.asset(card.image, fit: fit);
+          : Image.asset(
+              card.image,
+              fit: fit,
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('Bundled card asset failed: ${card.image}');
+                return const ColoredBox(
+                  color: Color(0xFF483619),
+                  child: Center(child: Icon(Icons.broken_image_outlined)),
+                );
+              },
+            );
     }
     final reference = thumbnail ? (card.thumbnail ?? card.image) : card.image;
     return FutureBuilder(
