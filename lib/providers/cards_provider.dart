@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-
 import '../models/card_item.dart';
 import '../repositories/card_repository.dart';
 
@@ -12,6 +11,8 @@ class CardsProvider extends ChangeNotifier {
   List<CardItem> _cards = const [];
   bool _isLoading = false;
   String? _errorMessage;
+  int _importCompleted = 0;
+  int _importTotal = 0;
 
   /// The currently loaded card collection.
   List<CardItem> get cards => List.unmodifiable(_cards);
@@ -21,6 +22,10 @@ class CardsProvider extends ChangeNotifier {
 
   /// A display-safe error message when loading fails.
   String? get errorMessage => _errorMessage;
+  int get importedCount => _cards.where((card) => card.isImported).length;
+  bool get isImporting => _importTotal > 0;
+  int get importCompleted => _importCompleted;
+  int get importTotal => _importTotal;
 
   /// Loads cards from the configured repository.
   Future<void> load() async {
@@ -51,4 +56,43 @@ class CardsProvider extends ChangeNotifier {
         .toList(growable: false);
     notifyListeners();
   }
+
+  Future<ImportBatchResult> importCards(
+    List<CardImportCandidate> candidates,
+  ) async {
+    _importCompleted = 0;
+    _importTotal = candidates.length;
+    notifyListeners();
+    try {
+      final result = await _repository.importCards(
+        candidates,
+        onProgress: (completed, total) {
+          _importCompleted = completed;
+          _importTotal = total;
+          notifyListeners();
+        },
+      );
+      _cards = await _repository.loadCards();
+      return result;
+    } finally {
+      _importCompleted = 0;
+      _importTotal = 0;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteImportedCard(String id) async {
+    await _repository.deleteImportedCard(id);
+    _cards = await _repository.loadCards();
+    notifyListeners();
+  }
+
+  Future<void> clearImportedCards() async {
+    await _repository.clearImportedCards();
+    _cards = await _repository.loadCards();
+    notifyListeners();
+  }
+
+  Future<Uint8List?> readStoredImage(String reference) =>
+      _repository.readStoredImage(reference);
 }

@@ -1,9 +1,14 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/card_item.dart';
 import '../providers/cards_provider.dart';
+import '../repositories/card_repository.dart';
+import '../widgets/card_artwork.dart';
 
 /// Shows the cards loaded from JSON, optionally limited to a selected deck.
 class CardBrowserScreen extends StatelessWidget {
@@ -29,10 +34,149 @@ class CardBrowserScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Back',
         ),
+        actions: [
+          if (deckId == null)
+            IconButton(
+              onPressed: cardState.isImporting
+                  ? null
+                  : () => _importCards(context, cardState),
+              icon: const Icon(Icons.upload_file_rounded),
+              tooltip: 'Import Cards',
+            ),
+          if (deckId == null && cardState.importedCount > 0)
+            PopupMenuButton(
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'clear',
+                  child: Text('Delete all imported cards'),
+                ),
+              ],
+              onSelected: (_) => _clearImported(context, cardState),
+            ),
+        ],
       ),
-      body: _buildBody(cards, cardState),
+      body: Column(
+        children: [
+          if (deckId == null)
+            ListTile(
+              title: Text(
+                '${cardState.importedCount} / $maxStoredCards cards stored',
+              ),
+              subtitle: cardState.isImporting
+                  ? Text(
+                      'Importing ${cardState.importCompleted} '
+                      'of ${cardState.importTotal}…',
+                    )
+                  : null,
+              trailing: FilledButton.icon(
+                onPressed: cardState.isImporting
+                    ? null
+                    : () => _importCards(context, cardState),
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: const Text('Import Cards'),
+              ),
+            ),
+          Expanded(child: _buildBody(cards, cardState)),
+        ],
+      ),
     );
   }
+
+  Future<void> _importCards(BuildContext context, CardsProvider state) async {
+    final remaining = maxStoredCards - state.importedCount;
+    if (remaining <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The 100-card limit has been reached.')),
+      );
+      return;
+    }
+    final picked = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp'],
+    );
+    if (picked == null || !context.mounted) return;
+    var files = picked.files;
+    if (files.length > remaining) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Not enough card slots'),
+          content: Text(
+            'Only $remaining of ${files.length} selected cards fit. '
+            'Import the first $remaining?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Import'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+      files = files.take(remaining).toList();
+    }
+    final candidates = files
+        .map(
+          (file) => CardImportCandidate(
+            filename: file.name,
+            bytes: file.bytes ?? Uint8List(0),
+            mimeType: _mimeFor(file.extension?.toLowerCase()),
+          ),
+        )
+        .toList();
+    final result = await state.importCards(candidates);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Import complete: ${result.imported} imported, '
+          '${result.duplicates} duplicates, '
+          '${result.invalid + result.unsupported + result.tooLarge + result.errors} skipped.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _clearImported(
+    BuildContext context,
+    CardsProvider state,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete all imported cards?'),
+        content: Text(
+          'This permanently deletes ${state.importedCount} imported cards. '
+          'Bundled cards will remain.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete all'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await state.clearImportedCards();
+  }
+
+  static String? _mimeFor(String? extension) => switch (extension) {
+        'png' => 'image/png',
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'webp' => 'image/webp',
+        _ => null,
+      };
 
   Widget _buildBody(List<CardItem> cards, CardsProvider cardState) {
     if (cardState.isLoading) {
@@ -72,18 +216,56 @@ class _CardListTile extends StatelessWidget {
     return Card(
       child: ListTile(
         onTap: () => context.go('/cards/${Uri.encodeComponent(card.id)}'),
-        leading: _CategorySwatch(colour: card.colour),
+        leading: SizedBox(
+          width: 52,
+          height: 68,
+          child: card.image.isEmpty
+              ? _CategorySwatch(colour: card.colour)
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: CardArtwork(card: card, thumbnail: true),
+                ),
+        ),
         title: Text(card.title),
         subtitle: Text(
           card.question,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: card.favorite
-            ? const Icon(Icons.favorite_rounded, color: Color(0xFFD5A53C))
-            : const Icon(Icons.chevron_right_rounded),
+        trailing: card.isImported
+            ? IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Delete imported card',
+                onPressed: () => _delete(context),
+              )
+            : card.favorite
+                ? const Icon(Icons.favorite_rounded, color: Color(0xFFD5A53C))
+                : const Icon(Icons.chevron_right_rounded),
       ),
     );
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete imported card?'),
+        content: Text('Permanently delete “${card.title}”?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await context.read<CardsProvider>().deleteImportedCard(card.id);
+    }
   }
 }
 
@@ -103,6 +285,8 @@ class _CategorySwatch extends StatelessWidget {
       'blue': Color(0xFF265F8F),
       'black': Color(0xFF17130E),
     };
-    return CircleAvatar(backgroundColor: colours[colour] ?? const Color(0xFF8A6428));
+    return CircleAvatar(
+      backgroundColor: colours[colour] ?? const Color(0xFF8A6428),
+    );
   }
 }

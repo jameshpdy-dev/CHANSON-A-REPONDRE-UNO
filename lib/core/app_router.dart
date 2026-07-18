@@ -8,6 +8,7 @@ import '../screens/png_upload_screen.dart';
 import '../screens/deck_gallery_screen.dart';
 import '../screens/deck_selection_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/search_screen.dart';
 
 /// Owns the application's declarative navigation graph.
 abstract final class AppRouter {
@@ -30,6 +31,11 @@ abstract final class AppRouter {
         name: 'card-viewer',
         builder: (context, state) =>
             CardViewerScreen(cardId: state.pathParameters['cardId']!),
+      ),
+      GoRoute(
+        path: '/search',
+        name: 'search',
+        builder: (context, state) => const SearchScreen(),
       ),
       GoRoute(
         path: '/upload-png',
@@ -62,7 +68,6 @@ abstract final class AppRouter {
 
   static const List<_DestinationRoute> _destinations = [
     _DestinationRoute('/play', 'play', 'Play', Icons.play_arrow_rounded),
-    _DestinationRoute('/search', 'search', 'Search', Icons.search_rounded),
     _DestinationRoute(
       '/journal',
       'journal',

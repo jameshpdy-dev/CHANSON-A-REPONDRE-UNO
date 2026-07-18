@@ -31,19 +31,30 @@ class CardSetImportRepository implements CardSetRepository {
     required String deckName,
     required List<CardSetImportSource> sources,
   }) async {
-    final pngSources = sources.where((source) => source.name.toLowerCase().endsWith('.png')).toList();
-    if (pngSources.isEmpty || pngSources.any((source) => source.bytes == null)) {
-      throw const FormatException('Select PNG card images using the file picker.');
-    }
-    final safeName = deckName.trim().isEmpty ? 'Imported Card Set' : deckName.trim();
-    final cards = pngSources.indexed.map((entry) {
-      final fileName = entry.$2.name;
-      return ImportedCardImage(
-        id: '${safeName.toLowerCase()}-${entry.$1 + 1}',
-        title: fileName.replaceAll(RegExp(r'\.png$', caseSensitive: false), '').replaceAll(RegExp('[_-]+'), ' '),
-        imagePath: 'data:image/png;base64,${base64Encode(entry.$2.bytes!)}',
+    final pngSources = sources
+        .where((source) => source.name.toLowerCase().endsWith('.png'))
+        .toList();
+    if (pngSources.isEmpty ||
+        pngSources.any((source) => source.bytes == null)) {
+      throw const FormatException(
+        'Select PNG card images using the file picker.',
       );
-    }).toList(growable: false);
+    }
+    final safeName = deckName.trim().isEmpty
+        ? 'Imported Card Set'
+        : deckName.trim();
+    final cards = pngSources.indexed
+        .map((entry) {
+          final fileName = entry.$2.name;
+          return ImportedCardImage(
+            id: '${safeName.toLowerCase()}-${entry.$1 + 1}',
+            title: fileName
+                .replaceAll(RegExp(r'\.png$', caseSensitive: false), '')
+                .replaceAll(RegExp('[_-]+'), ' '),
+            imagePath: 'data:image/png;base64,${base64Encode(entry.$2.bytes!)}',
+          );
+        })
+        .toList(growable: false);
     final cardSet = CardSet(
       id: '${safeName.toLowerCase()}-${DateTime.now().microsecondsSinceEpoch}',
       name: safeName,
@@ -52,7 +63,10 @@ class CardSetImportRepository implements CardSetRepository {
     );
     final preferences = await SharedPreferences.getInstance();
     final sets = [...await loadCardSets(), cardSet];
-    await preferences.setString(_indexKey, jsonEncode(sets.map((set) => set.toJson()).toList()));
+    await preferences.setString(
+      _indexKey,
+      jsonEncode(sets.map((set) => set.toJson()).toList()),
+    );
     return cardSet;
   }
 }

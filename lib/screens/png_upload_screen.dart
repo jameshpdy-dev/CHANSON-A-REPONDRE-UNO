@@ -25,7 +25,10 @@ class _PngUploadScreenState extends State<PngUploadScreen> {
     if (result == null) return;
     setState(() {
       _files = result.files
-          .where((file) => file.name.toLowerCase().endsWith('.png') && file.bytes != null)
+          .where(
+            (file) =>
+                file.name.toLowerCase().endsWith('.png') && file.bytes != null,
+          )
           .toList(growable: false);
     });
   }
@@ -53,10 +56,16 @@ class _PngUploadScreenState extends State<PngUploadScreen> {
           ),
           Expanded(
             child: _files.isEmpty
-                ? const Center(child: Text('Select one or more PNG card images.'))
+                ? const Center(
+                    child: Text('Select one or more PNG card images.'),
+                  )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 900 ? 5 : constraints.maxWidth >= 600 ? 3 : 2;
+                      final columns = constraints.maxWidth >= 900
+                          ? 5
+                          : constraints.maxWidth >= 600
+                          ? 3
+                          : 2;
                       return GridView.builder(
                         padding: const EdgeInsets.all(20),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -66,7 +75,8 @@ class _PngUploadScreenState extends State<PngUploadScreen> {
                           childAspectRatio: .72,
                         ),
                         itemCount: _files.length,
-                        itemBuilder: (context, index) => _PngCardTile(file: _files[index]),
+                        itemBuilder: (context, index) =>
+                            _PngCardTile(file: _files[index]),
                       );
                     },
                   ),
@@ -94,7 +104,9 @@ class _PngCardTile extends StatelessWidget {
           MaterialPageRoute<void>(
             builder: (context) => Scaffold(
               appBar: AppBar(title: Text(file.name)),
-              body: InteractiveViewer(child: Center(child: Image.memory(bytes, fit: BoxFit.contain))),
+              body: InteractiveViewer(
+                child: Center(child: Image.memory(bytes, fit: BoxFit.contain)),
+              ),
             ),
           ),
         ),
@@ -103,7 +115,11 @@ class _PngCardTile extends StatelessWidget {
             Expanded(child: Image.memory(bytes, fit: BoxFit.cover)),
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              child: Text(
+                file.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

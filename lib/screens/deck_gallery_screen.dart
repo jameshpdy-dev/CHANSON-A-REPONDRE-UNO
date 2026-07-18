@@ -11,16 +11,17 @@ class DeckGalleryScreen extends StatelessWidget {
 
   /// The selected deck identifier.
   final String deckId;
+
   @override
   Widget build(BuildContext context) {
-    final deck = context
-        .watch<DeckProvider>()
-        .decks
-        .where((item) => item.id == deckId)
-        .cast<dynamic>()
-        .firstOrNull;
+    final decks = context.watch<DeckProvider>().decks;
+    final deckIndex = decks.indexWhere((item) => item.id == deckId);
+    final deck = deckIndex == -1 ? null : decks[deckIndex];
     if (deck == null) {
-      return const Scaffold(body: Center(child: Text('Deck not found.')));
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('This imported deck is unavailable.')),
+      );
     }
     return Scaffold(
       appBar: AppBar(title: Text(deck.name)),
@@ -56,7 +57,14 @@ class DeckGalleryScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Expanded(
-                        child: Image.file(File(card.path), fit: BoxFit.cover),
+                        child: Image.file(
+                          File(card.path),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Center(
+                                child: Icon(Icons.broken_image_outlined),
+                              ),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8),

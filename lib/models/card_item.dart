@@ -20,6 +20,14 @@ class CardItem {
     this.emotion,
     this.theme,
     this.country,
+    this.source = CardSource.bundled,
+    this.originalFilename,
+    this.thumbnail,
+    this.mimeType,
+    this.sizeBytes,
+    this.importedAt,
+    this.checksum,
+    this.transcription,
   });
 
   /// Creates a card from a JSON object.
@@ -43,6 +51,19 @@ class CardItem {
       emotion: json['emotion'] as String?,
       theme: json['theme'] as String?,
       country: json['country'] as String?,
+      source: CardSource.values.firstWhere(
+        (value) => value.name == json['source'],
+        orElse: () => CardSource.bundled,
+      ),
+      originalFilename: json['originalFilename'] as String?,
+      thumbnail: json['thumbnail'] as String?,
+      mimeType: json['mimeType'] as String?,
+      sizeBytes: json['sizeBytes'] as int?,
+      importedAt: json['importedAt'] == null
+          ? null
+          : DateTime.tryParse(json['importedAt'] as String),
+      checksum: json['checksum'] as String?,
+      transcription: json['transcription'] as String?,
     );
   }
 
@@ -99,6 +120,16 @@ class CardItem {
 
   /// An optional country used by search filters.
   final String? country;
+  final CardSource source;
+  final String? originalFilename;
+  final String? thumbnail;
+  final String? mimeType;
+  final int? sizeBytes;
+  final DateTime? importedAt;
+  final String? checksum;
+  final String? transcription;
+
+  bool get isImported => source == CardSource.imported;
 
   /// Serializes the card for export and local editing.
   Map<String, dynamic> toJson() {
@@ -121,6 +152,14 @@ class CardItem {
       'emotion': emotion,
       'theme': theme,
       'country': country,
+      'source': source.name,
+      'originalFilename': originalFilename,
+      'thumbnail': thumbnail,
+      'mimeType': mimeType,
+      'sizeBytes': sizeBytes,
+      'importedAt': importedAt?.toIso8601String(),
+      'checksum': checksum,
+      'transcription': transcription,
     };
   }
 
@@ -145,6 +184,16 @@ class CardItem {
       emotion: emotion,
       theme: theme,
       country: country,
+      source: source,
+      originalFilename: originalFilename,
+      thumbnail: thumbnail,
+      mimeType: mimeType,
+      sizeBytes: sizeBytes,
+      importedAt: importedAt,
+      checksum: checksum,
+      transcription: transcription,
     );
   }
 }
+
+enum CardSource { bundled, imported }

@@ -38,14 +38,18 @@ class CardSetImportRepository implements CardSetRepository {
 
     final safeName = _safeFolderName(deckName);
     final root = await _storageRoot();
-    final deckDirectory = Directory('${root.path}${Platform.pathSeparator}$safeName');
+    final deckDirectory = Directory(
+      '${root.path}${Platform.pathSeparator}$safeName',
+    );
     await deckDirectory.create(recursive: true);
 
     final cards = <ImportedCardImage>[];
     for (var index = 0; index < pngSources.length; index++) {
       final source = pngSources[index];
       final fileName = _uniqueFileName(source.name, index);
-      final destination = File('${deckDirectory.path}${Platform.pathSeparator}$fileName');
+      final destination = File(
+        '${deckDirectory.path}${Platform.pathSeparator}$fileName',
+      );
       final bytes = source.bytes ?? await File(source.path!).readAsBytes();
       await destination.writeAsBytes(bytes, flush: true);
       cards.add(
@@ -63,8 +67,12 @@ class CardSetImportRepository implements CardSetRepository {
       cards: cards,
       createdAt: DateTime.now(),
     );
-    await File('${deckDirectory.path}${Platform.pathSeparator}cards.json')
-        .writeAsString(jsonEncode(cards.map((card) => card.toJson()).toList()), flush: true);
+    await File(
+      '${deckDirectory.path}${Platform.pathSeparator}cards.json',
+    ).writeAsString(
+      jsonEncode(cards.map((card) => card.toJson()).toList()),
+      flush: true,
+    );
     final sets = [...await loadCardSets(), cardSet];
     await (await _indexFile()).writeAsString(
       jsonEncode(sets.map((set) => set.toJson()).toList()),
@@ -82,7 +90,12 @@ class CardSetImportRepository implements CardSetRepository {
       if (path != null && await Directory(path).exists()) {
         await for (final entity in Directory(path).list(recursive: true)) {
           if (entity is File && _isPng(entity.path)) {
-            result.add(CardSetImportSource(name: entity.uri.pathSegments.last, path: entity.path));
+            result.add(
+              CardSetImportSource(
+                name: entity.uri.pathSegments.last,
+                path: entity.path,
+              ),
+            );
           }
         }
       } else if (_isPng(source.name)) {
@@ -98,12 +111,17 @@ class CardSetImportRepository implements CardSetRepository {
       ..createSync(recursive: true);
   }
 
-  Future<File> _indexFile() async => File('${(await _storageRoot()).path}${Platform.pathSeparator}$_indexName');
+  Future<File> _indexFile() async => File(
+    '${(await _storageRoot()).path}${Platform.pathSeparator}$_indexName',
+  );
 
   bool _isPng(String value) => value.toLowerCase().endsWith('.png');
 
   String _safeFolderName(String value) {
-    final normalized = value.trim().toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '_');
+    final normalized = value.trim().toLowerCase().replaceAll(
+      RegExp('[^a-z0-9]+'),
+      '_',
+    );
     return normalized.replaceAll(RegExp(r'(^_+|_+$)'), '').isEmpty
         ? 'imported_card_set'
         : normalized;

@@ -27,9 +27,7 @@ class DestinationPlaceholderScreen extends StatelessWidget {
           tooltip: 'Home',
         ),
       ),
-      body: Center(
-        child: Icon(icon, size: 56, color: const Color(0xFFD5A53C)),
-      ),
+      body: Center(child: Icon(icon, size: 56, color: const Color(0xFFD5A53C))),
     );
   }
 }

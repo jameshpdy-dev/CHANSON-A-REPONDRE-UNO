@@ -26,7 +26,14 @@ class CardFullscreenScreen extends StatelessWidget {
         minScale: 1,
         maxScale: 4,
         child: Center(
-          child: Image.file(File(cards[index].path), fit: BoxFit.contain),
+          child: Image.file(
+            File(cards[index].path),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Icon(
+              Icons.broken_image_outlined,
+              size: 64,
+            ),
+          ),
         ),
       ),
     ),

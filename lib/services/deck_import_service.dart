@@ -21,7 +21,9 @@ class DeckImportService {
     final pngFiles = files
         .where(
           (file) =>
-              file.name.toLowerCase().endsWith('.png') && file.path != null,
+              file.name.toLowerCase().endsWith('.png') &&
+              file.path != null &&
+              File(file.path!).existsSync(),
         )
         .toList(growable: false);
     if (pngFiles.isEmpty) {

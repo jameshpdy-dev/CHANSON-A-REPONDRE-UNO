@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../models/card_item.dart';
 import '../providers/cards_provider.dart';
+import '../widgets/card_artwork.dart';
 
 /// Shows a swipeable, media-capable detail view for a selected card.
 class CardViewerScreen extends StatefulWidget {
@@ -68,7 +69,9 @@ class _CardViewerScreenState extends State<CardViewerScreen> {
   }
 
   void _toggleFavorite(CardItem card) {
-    context.read<CardsProvider>().updateCard(card.copyWith(favorite: !card.favorite));
+    context.read<CardsProvider>().updateCard(
+      card.copyWith(favorite: !card.favorite),
+    );
   }
 
   Future<void> _playAudio(CardItem card) async {
@@ -118,7 +121,8 @@ class _CardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasActiveVideo = isMediaActive && (videoController?.value.isInitialized ?? false);
+    final hasActiveVideo =
+        isMediaActive && (videoController?.value.isInitialized ?? false);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Center(
@@ -138,21 +142,36 @@ class _CardPage extends StatelessWidget {
                   else if (card.image.isNotEmpty)
                     AspectRatio(
                       aspectRatio: 4 / 3,
-                      child: Image.asset(card.image, fit: BoxFit.cover),
+                      child: CardArtwork(card: card),
                     )
                   else
                     const _CardArtworkPlaceholder(),
                   const SizedBox(height: 24),
-                  Text(card.category.toUpperCase(), style: Theme.of(context).textTheme.labelLarge),
+                  Text(
+                    card.category.toUpperCase(),
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
                   const SizedBox(height: 6),
-                  Text(card.title, style: Theme.of(context).textTheme.headlineMedium),
+                  Text(
+                    card.title,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
                   const SizedBox(height: 20),
-                  Text(card.question, style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    card.question,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   if (card.quote.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    Text('"${card.quote}"', style: Theme.of(context).textTheme.bodyLarge),
+                    Text(
+                      '"${card.quote}"',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                     const SizedBox(height: 6),
-                    Text(card.author, style: Theme.of(context).textTheme.labelLarge),
+                    Text(
+                      card.author,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
                   ],
                   const SizedBox(height: 20),
                   ExpansionTile(
@@ -171,8 +190,14 @@ class _CardPage extends StatelessWidget {
                     children: [
                       IconButton.filledTonal(
                         onPressed: onToggleFavorite,
-                        tooltip: card.favorite ? 'Remove favourite' : 'Add favourite',
-                        icon: Icon(card.favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded),
+                        tooltip: card.favorite
+                            ? 'Remove favourite'
+                            : 'Add favourite',
+                        icon: Icon(
+                          card.favorite
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                        ),
                       ),
                       IconButton.filledTonal(
                         onPressed: card.audio.isEmpty ? null : onPlayAudio,
@@ -208,7 +233,11 @@ class _CardArtworkPlaceholder extends StatelessWidget {
       child: ColoredBox(
         color: const Color(0xFF483619),
         child: Center(
-          child: Icon(Icons.style_rounded, size: 72, color: Theme.of(context).colorScheme.primary),
+          child: Icon(
+            Icons.style_rounded,
+            size: 72,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ),
     );

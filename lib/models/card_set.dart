@@ -14,7 +14,9 @@ class CardSet {
       id: json['id'] as String,
       name: json['name'] as String,
       cards: (json['cards'] as List<dynamic>)
-          .map((item) => ImportedCardImage.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => ImportedCardImage.fromJson(item as Map<String, dynamic>),
+          )
           .toList(growable: false),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );

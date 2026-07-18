@@ -1,0 +1,63 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [feature/persistent-100-card-import]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+env:
+  FLUTTER_APP_DIRECTORY: .
+  GITHUB_PAGES_BASE_HREF: /CHANSON-A-REPONDRE-UNO/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
+        run: flutter pub get
+      - name: Analyze Flutter project
+        working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
+        run: flutter analyze
+      - name: Test Flutter project
+        working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
+        run: flutter test
+      - name: Build Flutter web
+        working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
+        run: >
+          flutter build web
+          --release
+          --base-href "${{ env.GITHUB_PAGES_BASE_HREF }}"
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -89,7 +89,8 @@ class _DeckTile extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/cards?deck=${Uri.encodeQueryComponent(deck.id)}'),
+        onTap: () =>
+            context.go('/cards?deck=${Uri.encodeQueryComponent(deck.id)}'),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(

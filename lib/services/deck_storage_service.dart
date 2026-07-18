@@ -28,10 +28,14 @@ class DeckStorageService {
     final preferences = await SharedPreferences.getInstance();
     final source = preferences.getString(_metadataKey);
     if (source == null) return const [];
-    final decoded = jsonDecode(source) as List<dynamic>;
-    return decoded
-        .map((item) => DeckModel.fromJson(item as Map<String, dynamic>))
-        .toList(growable: false);
+    try {
+      final decoded = jsonDecode(source) as List<dynamic>;
+      return decoded
+          .map((item) => DeckModel.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false);
+    } on FormatException {
+      return const [];
+    }
   }
 
   /// Saves the complete deck metadata index.

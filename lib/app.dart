@@ -21,7 +21,7 @@ class ChansonARepondreUnoApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (context) =>
-              CardsProvider(const AssetCardRepository())..load(),
+              CardsProvider(AssetCardRepository())..load(),
         ),
         ChangeNotifierProvider(
           create: (context) =>
