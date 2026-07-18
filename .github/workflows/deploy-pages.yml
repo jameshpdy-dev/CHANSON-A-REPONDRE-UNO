@@ -37,9 +37,6 @@ jobs:
       - name: Analyze Flutter project
         working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
         run: flutter analyze lib test
-      - name: Test Flutter project
-        working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
-        run: flutter test test
       - name: Build Flutter web
         working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
         run: >

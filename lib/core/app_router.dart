@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../screens/destination_placeholder_screen.dart';
 import '../screens/card_browser_screen.dart';
 import '../screens/card_viewer_screen.dart';
-import '../screens/deck_browser_screen.dart';
-import '../screens/png_upload_screen.dart';
 import '../screens/deck_gallery_screen.dart';
+import '../screens/deck_selection_screen.dart';
+import '../screens/destination_placeholder_screen.dart';
 import '../screens/diagnostics_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/png_upload_screen.dart';
 import '../screens/search_screen.dart';
 
 /// Owns the application's declarative navigation graph.
@@ -46,18 +46,18 @@ abstract final class AppRouter {
       GoRoute(
         path: '/decks',
         name: 'decks',
-        builder: (context, state) => const DeckBrowserScreen(),
-      ),
-      GoRoute(
-        path: '/diagnostics',
-        name: 'diagnostics',
-        builder: (context, state) => const DiagnosticsScreen(),
+        builder: (context, state) => const DeckSelectionScreen(),
       ),
       GoRoute(
         path: '/decks/:deckId',
         name: 'deck-gallery',
         builder: (context, state) =>
             DeckGalleryScreen(deckId: state.pathParameters['deckId']!),
+      ),
+      GoRoute(
+        path: '/diagnostics',
+        name: 'diagnostics',
+        builder: (context, state) => const DiagnosticsScreen(),
       ),
       ..._destinations.map(
         (destination) => GoRoute(
@@ -92,6 +92,18 @@ abstract final class AppRouter {
       'settings',
       'Settings',
       Icons.settings_rounded,
+    ),
+    _DestinationRoute(
+      '/profile',
+      'profile',
+      'Profile',
+      Icons.person_rounded,
+    ),
+    _DestinationRoute(
+      '/dj-who-videos',
+      'dj-who-videos',
+      'DJ WHO Videos',
+      Icons.graphic_eq_rounded,
     ),
   ];
 }

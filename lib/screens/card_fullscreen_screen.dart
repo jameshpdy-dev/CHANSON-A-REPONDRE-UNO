@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/card_image_model.dart';
+import '../widgets/local_card_image.dart';
 
 /// Displays PNG cards full-screen with horizontal swipe and pinch-to-zoom.
 class CardFullscreenScreen extends StatelessWidget {
@@ -39,10 +39,9 @@ class CardFullscreenScreen extends StatelessWidget {
                     fit: BoxFit.contain,
                     errorBuilder: _errorBuilder,
                   )
-                : Image.file(
-                    File(card.path),
+                : LocalCardImage(
+                    path: card.path,
                     fit: BoxFit.contain,
-                    errorBuilder: _errorBuilder,
                   ),
           ),
         );

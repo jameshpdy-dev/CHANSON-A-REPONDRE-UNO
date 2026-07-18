@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:chanson_a_repondre_uno/app.dart';
 import 'package:chanson_a_repondre_uno/data/chanson_a_repondre_uno_deck.dart';
@@ -12,71 +13,103 @@ void main() {
   testWidgets('renders accessible poster hotspots', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ChansonARepondreUnoApp());
+    await tester.pumpWidget(
+      ChansonARepondreUnoApp(cardRepository: _MemoryCardRepository()),
+    );
+    await _pumpRoute(tester);
 
-    expect(find.bySemanticsLabel('Play'), findsOneWidget);
-    expect(find.bySemanticsLabel('Settings'), findsOneWidget);
+    expect(find.text('UNO!'), findsOneWidget);
+    expect(find.text('PLAY'), findsOneWidget);
+    expect(find.text('CHOISIR UN DECK'), findsOneWidget);
+    expect(find.text('PARCOURIR LES CARTES'), findsOneWidget);
+    expect(find.text('RECHERCHER'), findsOneWidget);
+    expect(find.text('DECKS EN VEDETTE'), findsOneWidget);
+    expect(find.text('CARTES RÉCENTES'), findsOneWidget);
+    expect(find.text('Diagnostics'), findsNothing);
   });
 
   testWidgets(
-    'permanent deck is visible from deck, search, and diagnostics flows',
+    'permanent deck is visible from restored deck, browse, search, and viewer flows',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         ChansonARepondreUnoApp(cardRepository: _MemoryCardRepository()),
       );
       await _pumpRoute(tester);
 
-      await tester.ensureVisible(find.text('Choose Deck'));
-      await tester.tap(find.text('Choose Deck'));
+      _goTo(tester, '/decks');
       await _pumpUntilFound(tester, find.text(chansonARepondreUnoDeckName));
 
+      expect(find.text('Deck Selection'), findsOneWidget);
       expect(find.text(chansonARepondreUnoDeckName), findsWidgets);
       expect(find.text('67 cards'), findsOneWidget);
       expect(find.text('Permanent deck'), findsOneWidget);
 
-      await tester.tap(find.text(chansonARepondreUnoDeckName).first);
+      _goTo(tester, '/decks/$chansonARepondreUnoDeckId');
       await _pumpUntilFound(tester, find.text('Card 001'));
 
       expect(find.text(chansonARepondreUnoDeckName), findsWidgets);
       expect(find.text('Card 001'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Choose Deck'));
+      _goTo(tester, '/cards');
+      await _pumpUntilFound(tester, find.text('Browse Cards'));
+      expect(find.text('0 / 100 cards stored'), findsOneWidget);
+      expect(find.text('Card 001'), findsWidgets);
+      expect(find.textContaining('.png'), findsNothing);
+
+      _goTo(tester, '/cards/chanson-a-repondre-uno-001');
+      await _pumpUntilFound(tester, find.text('Card Viewer'));
+      expect(find.byType(Image), findsWidgets);
+      expect(find.text(chansonARepondreUnoDeckName.toUpperCase()), findsWidgets);
+
+      _goTo(tester, '/search');
       await _pumpRoute(tester);
-      await tester.tap(find.byTooltip('Home'));
-      await _pumpRoute(tester);
+      await tester.enterText(find.byType(SearchBar), 'Card 001');
+      await _pumpUntilFound(tester, find.text('Card 001'));
 
-      await tester.ensureVisible(find.text('Search'));
-      await tester.tap(find.text('Search'));
-      await _pumpRoute(tester);
-      await tester.enterText(find.byType(SearchBar), 'Card 067');
-      await _pumpUntilFound(tester, find.text('Card 067'));
-
-      expect(find.text('Card 067'), findsWidgets);
-
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-      await _pumpRoute(tester);
-
-      await tester.ensureVisible(find.text('Diagnostics'));
-      await tester.tap(find.text('Diagnostics'));
-      await _pumpUntilFound(tester, find.text('root-100-card-webapp'));
-
-      expect(find.text('App variant'), findsOneWidget);
-      expect(find.text('root-100-card-webapp'), findsOneWidget);
-      expect(find.text('Bundled cards'), findsOneWidget);
-      expect(find.text('67'), findsWidgets);
-      await tester.scrollUntilVisible(
-        find.text('Library status'),
-        300,
-        scrollable: find.byType(Scrollable).last,
-      );
-      expect(find.text('Library status'), findsOneWidget);
+      expect(find.text('Card 001'), findsWidgets);
+      expect(find.textContaining('.png'), findsNothing);
     },
   );
+
+  testWidgets('diagnostics route reports the permanent runtime count', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ChansonARepondreUnoApp(cardRepository: _MemoryCardRepository()),
+    );
+    await _pumpRoute(tester);
+
+    _goTo(tester, '/diagnostics');
+    await _pumpUntilFound(tester, find.text('root-100-card-webapp'));
+
+    expect(find.text('App variant'), findsOneWidget);
+    expect(find.text('Bundled cards'), findsOneWidget);
+    expect(find.text('67'), findsWidgets);
+  });
+
+  testWidgets('restored profile and DJ WHO routes remain reachable', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ChansonARepondreUnoApp());
+    await _pumpRoute(tester);
+
+    _goTo(tester, '/profile');
+    await _pumpUntilFound(tester, find.text('Profile'));
+    expect(find.text('Profile'), findsOneWidget);
+
+    _goTo(tester, '/dj-who-videos');
+    await _pumpUntilFound(tester, find.text('DJ WHO Videos'));
+    expect(find.text('DJ WHO Videos'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpRoute(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
+}
+
+void _goTo(WidgetTester tester, String location) {
+  GoRouter.of(tester.element(find.byType(Navigator).first)).go(location);
 }
 
 Future<void> _pumpUntilFound(
