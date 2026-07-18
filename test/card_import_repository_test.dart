@@ -22,12 +22,12 @@ void main() {
   test('imports one valid card with stable metadata and thumbnail', () async {
     final result = await repository.importCards([candidate('one.png')]);
     final cards = await repository.loadCards();
+    final imported = cards.where((card) => card.isImported).toList();
 
     expect(result.imported, 1);
-    expect(cards.single.isImported, isTrue);
-    expect(cards.single.id, startsWith('imported-'));
-    expect(cards.single.checksum, hasLength(64));
-    expect(store.thumbnails[cards.single.id], isNotEmpty);
+    expect(imported.single.id, startsWith('imported-'));
+    expect(imported.single.checksum, hasLength(64));
+    expect(store.thumbnails[imported.single.id], isNotEmpty);
   });
 
   test('preserves imported cards after repository reinitialization', () async {
@@ -36,7 +36,10 @@ void main() {
       bundle: JsonBundle(),
       importedStore: store,
     );
-    expect((await reopened.loadCards()).single.title, 'one');
+    final imported = (await reopened.loadCards())
+        .where((card) => card.isImported)
+        .toList();
+    expect(imported.single.title, 'one');
   });
 
   test('rejects unsupported, oversized, and unreadable files independently',

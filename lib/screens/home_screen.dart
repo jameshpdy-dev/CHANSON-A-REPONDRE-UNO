@@ -104,34 +104,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: _gold.withAlpha(160)),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'CHOOSE YOUR PATH',
-                            style: TextStyle(
-                              color: _gold,
-                              fontSize: 38,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          for (var i = 0; i < _items.length; i++)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _PathButton(
-                                item: _items[i],
-                                isActive: i == _activeIndex,
-                                onHover: () => setState(() => _activeIndex = i),
-                                onTap: () {
-                                  setState(() => _activeIndex = i);
-                                  context.go(_items[i].path);
-                                },
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'CHOOSE YOUR PATH',
+                              style: TextStyle(
+                                color: _gold,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
                               ),
                             ),
-                        ],
+                            const SizedBox(height: 14),
+                            for (var i = 0; i < _items.length; i++)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _PathButton(
+                                  item: _items[i],
+                                  isActive: i == _activeIndex,
+                                  onHover: () =>
+                                      setState(() => _activeIndex = i),
+                                  onTap: () {
+                                    setState(() => _activeIndex = i);
+                                    context.go(_items[i].path);
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
