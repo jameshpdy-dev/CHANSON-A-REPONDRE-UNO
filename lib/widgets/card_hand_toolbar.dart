@@ -40,12 +40,12 @@ class CardHandToolbar extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.shuffle_rounded),
-        label: const Text('SHUFFLE 5 CARDS'),
+        label: const Text('SHUFFLE CARDS'),
       ),
       OutlinedButton.icon(
         onPressed: isShuffling ? null : onReset,
         icon: const Icon(Icons.restart_alt),
-        label: const Text('RESET TO FIRST 5'),
+        label: const Text('RESET ORDER'),
       ),
       IconButton.outlined(
         tooltip: 'Filters',

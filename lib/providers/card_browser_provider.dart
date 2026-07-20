@@ -33,7 +33,7 @@ class CardBrowserProvider extends ChangeNotifier {
     generateRandomHand();
   }
 
-  Future<void> generateRandomHand({int count = 5}) async {
+  Future<void> generateRandomHand({int? count}) async {
     if (isShuffling) return;
     isShuffling = true;
     selectedCardId = null;
@@ -41,16 +41,20 @@ class CardBrowserProvider extends ChangeNotifier {
     await Future<void>.delayed(const Duration(milliseconds: 180));
     final shuffled = List<CardImageModel>.from(availableCards)
       ..shuffle(_random);
-    visibleHand = List.unmodifiable(shuffled.take(count));
+    visibleHand = List.unmodifiable(
+      count == null ? shuffled : shuffled.take(count),
+    );
     shuffleGeneration++;
     isShuffling = false;
     notifyListeners();
   }
 
-  void resetToFirstCards({int count = 5}) {
+  void resetToFirstCards({int? count}) {
     if (isShuffling) return;
     selectedCardId = null;
-    visibleHand = List.unmodifiable(availableCards.take(count));
+    visibleHand = List.unmodifiable(
+      count == null ? availableCards : availableCards.take(count),
+    );
     shuffleGeneration++;
     notifyListeners();
   }
@@ -96,7 +100,18 @@ class CardBrowserProvider extends ChangeNotifier {
     availableCards = List.unmodifiable(
       _sourceCards.where((card) {
         return (categoryFilter == null || card.category == categoryFilter) &&
-            (needle.isEmpty || card.title.toLowerCase().contains(needle)) &&
+            (needle.isEmpty ||
+                [
+                  card.id,
+                  card.title,
+                  card.category,
+                  card.author,
+                  card.theme,
+                  card.emotion,
+                  card.transcription ?? '',
+                  card.cleanedTranscription ?? '',
+                  ...card.tags,
+                ].join(' ').toLowerCase().contains(needle)) &&
             (!favouritesOnly || card.isFavourite) &&
             (!transcribedOnly ||
                 card.transcription != null ||
