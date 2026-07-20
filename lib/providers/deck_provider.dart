@@ -15,6 +15,8 @@ const int chansonARepondreUnoCardCount = 67;
 
 class DeckProvider extends ChangeNotifier {
   DeckProvider(this._storage, this._importer);
+  static Deck get permanentDeck => _permanentDeck;
+
   final LocalStorageService _storage;
   final DeckImportService _importer;
   static const _uuid = Uuid();
@@ -31,9 +33,9 @@ class DeckProvider extends ChangeNotifier {
   String? get error => _error;
   String? get activeDeckId => _activeDeckId;
   Deck? get activeDeck =>
-      _decks.where((deck) => deck.id == _activeDeckId).firstOrNull;
+      decks.where((deck) => deck.id == _activeDeckId).firstOrNull;
   List<CardImageModel> get cards =>
-      _decks.expand((deck) => deck.cards).toList();
+      decks.expand((deck) => deck.cards).toList();
 
   Future<void> load() async {
     try {
@@ -90,6 +92,7 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> rename(String id, String name) async {
     if (name.trim().isEmpty) return;
+    if (id == chansonARepondreUnoDeckId) return;
     _decks = _decks
         .map((deck) => deck.id == id ? deck.copyWith(name: name.trim()) : deck)
         .toList();
@@ -126,11 +129,12 @@ class DeckProvider extends ChangeNotifier {
   CardImageModel? cardById(String cardId) =>
       cards.where((card) => card.id == cardId).firstOrNull;
 
-  Deck? deckForCard(String cardId) => _decks
+  Deck? deckForCard(String cardId) => decks
       .where((deck) => deck.cards.any((card) => card.id == cardId))
       .firstOrNull;
 
   Future<void> updateCard(CardImageModel updated) async {
+    if (updated.deckId == chansonARepondreUnoDeckId) return;
     _decks = _decks
         .map(
           (deck) => deck.copyWith(
