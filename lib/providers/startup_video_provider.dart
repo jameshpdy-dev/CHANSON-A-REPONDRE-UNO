@@ -20,6 +20,7 @@ class StartupVideoProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool loading = true;
   bool hasStarted = false;
   bool importing = false;
+  bool muted = false;
   bool _resumeAfterLifecycle = false;
   String? error;
 
@@ -75,6 +76,21 @@ class StartupVideoProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> toggle() async =>
       controller?.value.isPlaying == true ? pause() : play();
 
+  Future<void> toggleMuted() async {
+    muted = !muted;
+    await controller?.setVolume(muted ? 0 : 1);
+    notifyListeners();
+  }
+
+  Future<void> replay() async {
+    final video = controller;
+    if (video?.value.isInitialized != true) return;
+    hasStarted = true;
+    await video!.seekTo(Duration.zero);
+    await video.play();
+    notifyListeners();
+  }
+
   Future<void> _loadSource(
     StartupVideoSource next, {
     bool allowFallback = false,
@@ -97,6 +113,7 @@ class StartupVideoProvider extends ChangeNotifier with WidgetsBindingObserver {
       controller = nextController;
       source = next;
       hasStarted = false;
+      muted = false;
       loading = false;
       await previous?.dispose();
       notifyListeners();
