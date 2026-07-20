@@ -1,325 +1,332 @@
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../data/chanson_a_repondre_uno_deck.dart';
-import '../models/card_item.dart';
-import '../providers/cards_provider.dart';
-import '../repositories/card_repository.dart';
-import '../widgets/card_artwork.dart';
+import '../core/app_router.dart';
+import '../models/card_image_model.dart';
+import '../models/browse_hand_preview_args.dart';
+import '../providers/card_browser_provider.dart';
+import '../providers/deck_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/card_hand_toolbar.dart';
+import '../widgets/empty_deck_state.dart';
+import '../widgets/five_card_hand.dart';
+import '../widgets/home_navigation_button.dart';
+import '../widgets/selected_card_actions.dart';
+import 'browse_hand_fullscreen_screen.dart';
 
-/// Shows the cards loaded from JSON, optionally limited to a selected deck.
-class CardBrowserScreen extends StatelessWidget {
-  /// Creates a card browser.
-  const CardBrowserScreen({this.deckId, super.key});
+class CardBrowserScreen extends StatefulWidget {
+  const CardBrowserScreen({super.key});
+  @override
+  State<CardBrowserScreen> createState() => _CardBrowserScreenState();
+}
 
-  /// An optional deck identifier used to filter the collection.
-  final String? deckId;
+class _CardBrowserScreenState extends State<CardBrowserScreen> {
+  final browser = CardBrowserProvider();
+  final focusNode = FocusNode();
+  bool previewOpening = false;
 
   @override
-  Widget build(BuildContext context) {
-    final cardState = context.watch<CardsProvider>();
-    final cards = cardState.cards
-        .where((card) => deckId == null || card.deckId == deckId)
-        .toList(growable: false);
-    final title = deckId == null ? 'Browse Cards' : _formatDeckName(deckId!);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final deck = context.watch<DeckProvider>().activeDeck;
+    if (deck != null) browser.initializeForDeck(deck.id, deck.cards);
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        leading: IconButton(
-          onPressed: () => context.go(deckId == null ? '/' : '/decks'),
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Back',
-        ),
-        actions: [
-          if (deckId == null)
-            IconButton(
-              onPressed: cardState.isImporting
-                  ? null
-                  : () => _importCards(context, cardState),
-              icon: const Icon(Icons.upload_file_rounded),
-              tooltip: 'Import Cards',
+  @override
+  void dispose() {
+    browser.dispose();
+    focusNode.dispose();
+    super.dispose();
+  }
+
+  void open(CardImageModel card) => context.go(AppRoutes.cardAlias(card.id));
+
+  Future<void> openHandPreview(int heldIndex, String deckName) async {
+    if (previewOpening || browser.visibleHand.isEmpty) return;
+    previewOpening = true;
+    try {
+      try {
+        await HapticFeedback.selectionClick();
+      } on Object {
+        // Haptics are optional on desktop and Web.
+      }
+      if (!mounted) return;
+      final args = BrowseHandPreviewArgs(
+        cards: browser.visibleHand,
+        initialIndex: heldIndex,
+        deckId: browser.deckId ?? '',
+        deckName: deckName,
+        selectedCardId: browser.selectedCardId,
+      );
+      final reducedMotion = MediaQuery.disableAnimationsOf(context);
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder(
+          transitionDuration: reducedMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 320),
+          pageBuilder: (_, _, _) => BrowseHandFullscreenScreen(args: args),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween(begin: .96, end: 1.0).animate(animation),
+              child: child,
             ),
-          if (deckId == null && cardState.importedCount > 0)
-            PopupMenuButton(
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'clear',
-                  child: Text('Delete all imported cards'),
+          ),
+        ),
+      );
+    } finally {
+      previewOpening = false;
+    }
+  }
+
+  Future<void> showFilters() async {
+    final deck = context.read<DeckProvider>().activeDeck;
+    if (deck == null) return;
+    var category = browser.categoryFilter;
+    var title = browser.titleFilter;
+    var favourites = browser.favouritesOnly;
+    var transcribed = browser.transcribedOnly;
+    final categories = deck.cards.map((card) => card.category).toSet().toList()
+      ..sort();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              20 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Filter hand',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: title,
+                  decoration: const InputDecoration(labelText: 'Card title'),
+                  onChanged: (value) => title = value,
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All categories'),
+                    ),
+                    ...categories.map(
+                      (value) =>
+                          DropdownMenuItem(value: value, child: Text(value)),
+                    ),
+                  ],
+                  onChanged: (value) => setSheetState(() => category = value),
+                ),
+                CheckboxListTile(
+                  title: const Text('Favourites only'),
+                  value: favourites,
+                  onChanged: (value) =>
+                      setSheetState(() => favourites = value ?? false),
+                ),
+                CheckboxListTile(
+                  title: const Text('Transcribed only'),
+                  value: transcribed,
+                  onChanged: (value) =>
+                      setSheetState(() => transcribed = value ?? false),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        browser.applyFilters(
+                          title: '',
+                          favourites: false,
+                          transcribed: false,
+                          clearCategory: true,
+                        );
+                        Navigator.pop(sheetContext);
+                      },
+                      child: const Text('Clear'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () {
+                        browser.applyFilters(
+                          category: category,
+                          title: title,
+                          favourites: favourites,
+                          transcribed: transcribed,
+                          clearCategory: category == null,
+                        );
+                        Navigator.pop(sheetContext);
+                      },
+                      child: const Text('Apply'),
+                    ),
+                  ],
                 ),
               ],
-              onSelected: (_) => _clearImported(context, cardState),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (deckId == null)
-            ListTile(
-              title: Text(
-                '${cardState.importedCount} / $maxStoredCards cards stored',
-              ),
-              subtitle: cardState.isImporting
-                  ? Text(
-                      'Importing ${cardState.importCompleted} '
-                      'of ${cardState.importTotal}…',
-                    )
-                  : null,
-              trailing: FilledButton.icon(
-                onPressed: cardState.isImporting
-                    ? null
-                    : () => _importCards(context, cardState),
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Import Cards'),
-              ),
-            ),
-          Expanded(child: _buildBody(cards, cardState)),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _importCards(BuildContext context, CardsProvider state) async {
-    final remaining = maxStoredCards - state.importedCount;
-    if (remaining <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('The 100-card limit has been reached.')),
-      );
-      return;
-    }
-    final picked = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      withData: true,
-      type: FileType.custom,
-      allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp'],
-    );
-    if (picked == null || !context.mounted) return;
-    var files = picked.files;
-    if (files.length > remaining) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Not enough card slots'),
-          content: Text(
-            'Only $remaining of ${files.length} selected cards fit. '
-            'Import the first $remaining?',
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Import'),
-            ),
-          ],
-        ),
-      );
-      if (proceed != true) return;
-      files = files.take(remaining).toList();
-    }
-    final candidates = files
-        .map(
-          (file) => CardImportCandidate(
-            filename: file.name,
-            bytes: file.bytes ?? Uint8List(0),
-            mimeType: _mimeFor(file.extension?.toLowerCase()),
-          ),
-        )
-        .toList();
-    final result = await state.importCards(candidates);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Import complete: ${result.imported} imported, '
-          '${result.duplicates} duplicates, '
-          '${result.invalid + result.unsupported + result.tooLarge + result.errors} skipped.',
         ),
       ),
     );
   }
 
-  Future<void> _clearImported(BuildContext context, CardsProvider state) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete all imported cards?'),
-        content: Text(
-          'This permanently deletes ${state.importedCount} imported cards. '
-          'Bundled cards will remain.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete all'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) await state.clearImportedCards();
-  }
-
-  static String? _mimeFor(String? extension) => switch (extension) {
-    'png' => 'image/png',
-    'jpg' || 'jpeg' => 'image/jpeg',
-    'webp' => 'image/webp',
-    _ => null,
-  };
-
-  Widget _buildBody(List<CardItem> cards, CardsProvider cardState) {
-    if (cardState.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (cardState.errorMessage case final String message) {
-      return Center(child: Text(message));
-    }
-    if (cards.isEmpty) {
-      return const Center(child: Text('No cards match this deck.'));
-    }
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 260,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.66,
-      ),
-      itemCount: cards.length,
-      itemBuilder: (context, index) => _CardListTile(card: cards[index]),
-    );
-  }
-
-  static String _formatDeckName(String id) {
-    if (id == chansonARepondreUnoDeckId) {
-      return chansonARepondreUnoDeckName;
-    }
-    return id
-        .split(RegExp('[-_]'))
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
-  }
-}
-
-/// A concise visual entry point into a card viewer.
-class _CardListTile extends StatelessWidget {
-  /// Creates a card list tile.
-  const _CardListTile({required this.card});
-
-  final CardItem card;
+  int get filterCount =>
+      (browser.categoryFilter == null ? 0 : 1) +
+      (browser.titleFilter.isEmpty ? 0 : 1) +
+      (browser.favouritesOnly ? 1 : 0) +
+      (browser.transcribedOnly ? 1 : 0);
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/cards/${Uri.encodeComponent(card.id)}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  card.image.isEmpty
-                      ? _CategorySwatch(colour: card.colour)
-                      : CardArtwork(
-                          card: card,
-                          thumbnail: true,
-                          fit: BoxFit.contain,
-                        ),
-                  if (card.isImported)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: IconButton.filledTonal(
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: 'Delete imported card',
-                        onPressed: () => _delete(context),
+    final decks = context.watch<DeckProvider>();
+    final deck = decks.activeDeck;
+    return Scaffold(
+      backgroundColor: const Color(0xFF090806),
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Back',
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.home),
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: const Text('Browse Cards'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: HomeNavigationButton(),
+          ),
+        ],
+      ),
+      body: deck == null
+          ? EmptyDeckState(
+              title: 'No deck selected',
+              message:
+                  'Choose an active deck before creating a five-card hand.',
+              onChooseDeck: () => context.go(AppRoutes.decks),
+            )
+          : deck.cards.isEmpty
+          ? EmptyDeckState(
+              title: 'This deck is empty',
+              message: 'Import PNG cards into ${deck.name} to browse them.',
+              onChooseDeck: () => context.go(AppRoutes.decks),
+            )
+          : AnimatedBuilder(
+              animation: browser,
+              builder: (context, _) {
+                final selected = browser.availableCards
+                    .where((card) => card.id == browser.selectedCardId)
+                    .firstOrNull;
+                return CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+                        browser.selectRelative(-1),
+                    const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+                        browser.selectRelative(1),
+                    const SingleActivator(LogicalKeyboardKey.keyS):
+                        browser.generateRandomHand,
+                    const SingleActivator(LogicalKeyboardKey.escape):
+                        browser.clearSelection,
+                    const SingleActivator(LogicalKeyboardKey.enter): () {
+                      if (selected != null) open(selected);
+                    },
+                    const SingleActivator(LogicalKeyboardKey.space): () {
+                      if (selected == null && browser.visibleHand.isNotEmpty) {
+                        browser.selectCard(browser.visibleHand.first.id);
+                      }
+                    },
+                  },
+                  child: Focus(
+                    focusNode: focusNode,
+                    autofocus: true,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          CardHandToolbar(
+                            deckName: deck.name,
+                            cardCount: browser.availableCards.length,
+                            filterCount: filterCount,
+                            isShuffling: browser.isShuffling,
+                            onShuffle: browser.availableCards.isEmpty
+                                ? null
+                                : browser.generateRandomHand,
+                            onReset: browser.resetToFirstCards,
+                            onFilter: showFilters,
+                          ),
+                          if (browser.availableCards.length < 5 &&
+                              browser.availableCards.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                'This deck contains only ${browser.availableCards.length} ${browser.availableCards.length == 1 ? 'card' : 'cards'}.',
+                                style: const TextStyle(
+                                  color: AppTheme.brightGold,
+                                ),
+                              ),
+                            ),
+                          if (browser.availableCards.isEmpty)
+                            Expanded(
+                              child: EmptyDeckState(
+                                title: 'No cards match',
+                                message: 'Clear or change the active filters.',
+                                onChooseDeck: showFilters,
+                              ),
+                            )
+                          else
+                            Expanded(
+                              child: FiveCardHand(
+                                cards: browser.visibleHand,
+                                deckName: deck.name,
+                                selectedCardId: browser.selectedCardId,
+                                shuffleGeneration: browser.shuffleGeneration,
+                                onCardSelected: browser.selectCard,
+                                onCardOpened: open,
+                                onCardLongPressed: (index) =>
+                                    openHandPreview(index, deck.name),
+                              ),
+                            ),
+                          if (selected != null)
+                            SelectedCardActions(
+                              card: selected,
+                              deckName: deck.name,
+                              onOpen: () => open(selected),
+                              onTranscribe: () => context.go(
+                                AppRoutes.transcription(selected.id),
+                              ),
+                              onDiscuss: selected.transcriptionReviewed
+                                  ? () => context.go(
+                                      AppRoutes.cardChat(selected.id),
+                                    )
+                                  : null,
+                              onFavourite: () async {
+                                await decks.toggleFavourite(selected.id);
+                                final refreshed = decks.activeDeck;
+                                if (refreshed != null) {
+                                  browser.refreshAfterCardMovedOrDeleted(
+                                    refreshed.cards,
+                                  );
+                                }
+                              },
+                            ),
+                        ],
                       ),
                     ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    card.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    card.isImported ? 'Imported card' : card.category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+                );
+              },
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _delete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete imported card?'),
-        content: Text('Permanently delete “${card.title}”?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && context.mounted) {
-      await context.read<CardsProvider>().deleteImportedCard(card.id);
-    }
-  }
-}
-
-/// Displays the matching colour associated with a card category.
-class _CategorySwatch extends StatelessWidget {
-  /// Creates a category swatch.
-  const _CategorySwatch({required this.colour});
-
-  final String colour;
-
-  @override
-  Widget build(BuildContext context) {
-    const colours = <String, Color>{
-      'red': Color(0xFFA52D20),
-      'yellow': Color(0xFFC79322),
-      'green': Color(0xFF4B792E),
-      'blue': Color(0xFF265F8F),
-      'black': Color(0xFF17130E),
-    };
-    return CircleAvatar(
-      backgroundColor: colours[colour] ?? const Color(0xFF8A6428),
     );
   }
 }

@@ -1,79 +1,134 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
-import 'deck_storage_service.dart';
+import 'local_storage_service.dart';
 
-/// Copies selected PNG files into a new locally persisted deck.
+class DeckImportException implements Exception {
+  const DeckImportException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 class DeckImportService {
-  /// Creates a deck importer using application storage.
-  const DeckImportService(this._storage);
+  DeckImportService(this._storage);
+  final LocalStorageService _storage;
+  static const _uuid = Uuid();
 
-  final DeckStorageService _storage;
+  Future<List<PlatformFile>?> pickPngFiles() async {
+    final result = await FilePicker.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const ['png'],
+      withData: true,
+    );
+    return result?.files;
+  }
 
-  /// Imports validated PNG files as one deck without changing file bytes.
-  Future<DeckModel> importDeck({
-    required String deckName,
-    required List<PlatformFile> files,
-  }) async {
-    final pngFiles = files
-        .where(
-          (file) =>
-              file.name.toLowerCase().endsWith('.png') &&
-              file.path != null &&
-              File(file.path!).existsSync(),
-        )
-        .toList(growable: false);
-    if (pngFiles.isEmpty) {
-      throw const FormatException('Select one or more PNG files.');
+  Future<Deck> import(String name, List<PlatformFile> files) async {
+    if (name.trim().isEmpty) {
+      throw const DeckImportException('Enter a deck name.');
     }
-    final name = deckName.trim();
-    if (name.isEmpty) {
-      throw const FormatException('Enter a deck name.');
+    if (files.isEmpty) {
+      throw const DeckImportException('Select at least one PNG file.');
     }
-    final deckId = 'deck_${DateTime.now().microsecondsSinceEpoch}';
-    final root = await _storage.decksDirectory();
-    final directory = Directory('${root.path}${Platform.pathSeparator}$deckId');
-    await directory.create(recursive: true);
+    if (files.any((file) => !file.name.toLowerCase().endsWith('.png'))) {
+      throw const DeckImportException('Only PNG files can be imported.');
+    }
+    final id = _uuid.v4();
+    Directory? directory;
+    if (!kIsWeb) {
+      final root = await _storage.appDirectory();
+      directory = Directory('${root.path}/decks/$id');
+      await directory.create(recursive: true);
+    }
     final cards = <CardImageModel>[];
     final usedNames = <String>{};
-    for (var index = 0; index < pngFiles.length; index++) {
-      final file = pngFiles[index];
-      final targetName = _uniqueName(file.name, usedNames);
-      final targetPath =
-          '${directory.path}${Platform.pathSeparator}$targetName';
-      await File(file.path!).copy(targetPath);
-      cards.add(
-        CardImageModel(
-          id: '$deckId-${index + 1}',
-          title: _titleFromName(targetName),
-          path: targetPath,
-        ),
-      );
+    try {
+      for (final file in files) {
+        final bytes =
+            file.bytes ??
+            (file.path == null ? null : await File(file.path!).readAsBytes());
+        if (bytes == null) {
+          throw DeckImportException('${file.name} could not be read.');
+        }
+        if (!_hasPngSignature(bytes)) {
+          throw DeckImportException('${file.name} is not a valid PNG file.');
+        }
+        final safeName = _uniqueName(file.name, usedNames);
+        final storedPath = kIsWeb
+            ? 'data:image/png;base64,${base64Encode(bytes)}'
+            : '${directory!.path}/$safeName';
+        if (!kIsWeb) {
+          await File(storedPath).writeAsBytes(bytes, flush: true);
+        }
+        cards.add(
+          CardImageModel(
+            id: _uuid.v4(),
+            deckId: id,
+            title: safeName.substring(0, safeName.length - 4),
+            path: storedPath,
+            category: 'Parole',
+            colour: 'red',
+            importedAt: DateTime.now(),
+            imageWidth: _pngInt(bytes, 16),
+            imageHeight: _pngInt(bytes, 20),
+          ),
+        );
+      }
+    } on Object {
+      if (directory != null && await directory.exists()) {
+        await directory.delete(recursive: true);
+      }
+      rethrow;
     }
-    return DeckModel(
-      id: deckId,
-      name: name,
+    return Deck(
+      id: id,
+      name: name.trim(),
+      coverPath: cards.first.path,
       cards: cards,
       createdAt: DateTime.now(),
     );
   }
 
-  String _uniqueName(String name, Set<String> usedNames) {
-    final dot = name.lastIndexOf('.');
-    final stem = dot > 0 ? name.substring(0, dot) : name;
-    var candidate = name;
-    var copy = 2;
-    while (!usedNames.add(candidate.toLowerCase())) {
-      candidate = '$stem ($copy++).png';
+  bool _hasPngSignature(List<int> bytes) {
+    const signature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
+    if (bytes.length < signature.length) return false;
+    for (var index = 0; index < signature.length; index++) {
+      if (bytes[index] != signature[index]) return false;
+    }
+    return true;
+  }
+
+  int? _pngInt(List<int> bytes, int offset) {
+    if (bytes.length < offset + 4) return null;
+    return (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
+  }
+
+  String _uniqueName(String original, Set<String> used) {
+    final stem = original.substring(0, original.length - 4);
+    var candidate = original;
+    var index = 2;
+    while (!used.add(candidate.toLowerCase())) {
+      candidate = '$stem ($index).png';
+      index++;
     }
     return candidate;
   }
 
-  String _titleFromName(String name) => name
-      .replaceAll(RegExp(r'\.png$', caseSensitive: false), '')
-      .replaceAll(RegExp('[_-]+'), ' ')
-      .trim();
+  Future<void> deleteFiles(Deck deck) async {
+    if (kIsWeb) return;
+    final root = await _storage.appDirectory();
+    final directory = Directory('${root.path}/decks/${deck.id}');
+    if (await directory.exists()) await directory.delete(recursive: true);
+  }
 }
