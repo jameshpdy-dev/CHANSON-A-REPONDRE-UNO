@@ -23,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _PathItem('AI Chat', '/ai-chat', Icons.smart_toy_rounded),
     _PathItem('Rules', '/rules', Icons.gavel_rounded),
     _PathItem('Settings', '/settings', Icons.settings_rounded),
+    _PathItem('Credits', '/credits', Icons.favorite_rounded),
   ];
 
   static const _gold = Color(0xFFEBC36B);
