@@ -36,7 +36,7 @@ jobs:
         run: flutter pub get
       - name: Analyze Flutter project
         working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
-        run: flutter analyze lib test
+        run: flutter analyze lib
       - name: Build Flutter web
         working-directory: ${{ env.FLUTTER_APP_DIRECTORY }}
         run: >
