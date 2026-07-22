@@ -15,7 +15,6 @@ import '../widgets/home_navigation_button.dart';
 import '../widgets/settings_action_tile.dart';
 import '../widgets/settings_dropdown_tile.dart';
 import '../widgets/settings_section.dart';
-import '../widgets/settings_slider_tile.dart';
 import '../widgets/settings_toggle_tile.dart';
 import '../widgets/startup_video_viewport.dart';
 
@@ -123,23 +122,22 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.home_outlined,
             children: [
               ListTile(
-                leading: const Icon(Icons.movie_outlined),
-                title: const Text('Permanent background video'),
+                leading: Icon(
+                  background.mode == BackgroundMode.sauvage
+                      ? Icons.movie_outlined
+                      : Icons.image_outlined,
+                ),
+                title: const Text('Current background'),
                 subtitle: Text(background.currentFilename),
               ),
-              SettingsSliderTile(
-                title: 'Dark overlay',
-                value: background.darkOverlay,
-                min: 0,
-                max: .6,
-                divisions: 12,
-                label: '${(background.darkOverlay * 100).round()}%',
-                onChanged: background.setOverlay,
-              ),
-              SettingsToggleTile(
-                title: 'Mute background video',
-                value: background.muteVideo,
-                onChanged: background.setMuteVideo,
+              SettingsDropdownTile<BackgroundMode>(
+                title: 'Background mode',
+                value: background.mode,
+                items: const {
+                  BackgroundMode.sauvage: 'Sauvage',
+                  BackgroundMode.staticPng: 'Static PNG',
+                },
+                onChanged: background.setMode,
               ),
               const Divider(),
               ListTile(

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:chanson_a_repondre_uno/providers/deck_provider.dart';
-import 'package:chanson_a_repondre_uno/providers/card_browser_provider.dart';
+import 'package:uno_chanson_2/providers/card_browser_provider.dart';
+import 'package:uno_chanson_2/providers/deck_provider.dart';
 
 void main() {
   test('permanent deck exposes 67 unique cards and shuffle preserves them', () async {

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../core/app_router.dart';
+import '../providers/background_provider.dart';
 import '../providers/deck_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/home_experience_provider.dart';
@@ -145,6 +148,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
+    final background = context.watch<BackgroundProvider>();
+    _syncBackgroundPlayback(background.mode);
     final game = context.watch<GameProvider>().state;
     final experience = context.watch<HomeExperienceProvider>();
     final homeInteractive = experience.homeInteractive;
@@ -160,10 +165,19 @@ class _HomeScreenState extends State<HomeScreen> {
         fit: StackFit.expand,
         children: [
           Positioned.fill(
-            child: HomeBackgroundVideo(
-              controller: _backgroundController,
-              ready: _backgroundReady,
-            ),
+            child: background.mode == BackgroundMode.sauvage
+                ? HomeBackgroundVideo(
+                    controller: _backgroundController,
+                    ready: _backgroundReady,
+                  )
+                : Image.asset(
+                    background.imagePath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const ColoredBox(color: Color(0xFF090503)),
+                  ),
           ),
           IgnorePointer(
             ignoring: !homeInteractive,
@@ -280,6 +294,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _syncBackgroundPlayback(BackgroundMode mode) {
+    if (!_backgroundReady || !_backgroundController.value.isInitialized) {
+      return;
+    }
+    if (mode == BackgroundMode.sauvage) {
+      if (!_backgroundController.value.isPlaying) {
+        unawaited(_backgroundController.play());
+      }
+    } else if (_backgroundController.value.isPlaying) {
+      unawaited(_backgroundController.pause());
+    }
   }
 }
 

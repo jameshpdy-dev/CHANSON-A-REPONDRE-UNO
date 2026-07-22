@@ -17,13 +17,13 @@ class HomeBackgroundVideo extends StatelessWidget {
       return const ColoredBox(color: Color(0xFF090503));
     }
     final size = controller.value.size;
-    return ClipRect(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-        child: SizedBox(
-          width: size.width > 0 ? size.width : 16,
-          height: size.height > 0 ? size.height : 9,
+    final width = size.width > 0 ? size.width : 16.0;
+    final height = size.height > 0 ? size.height : 9.0;
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: width / height,
           child: VideoPlayer(controller),
         ),
       ),
