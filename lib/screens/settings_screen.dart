@@ -135,7 +135,7 @@ class SettingsScreen extends StatelessWidget {
                 value: background.mode,
                 items: const {
                   BackgroundMode.sauvage: 'Sauvage',
-                  BackgroundMode.staticPng: 'Static PNG',
+                  BackgroundMode.staticPng: 'Default',
                 },
                 onChanged: background.setMode,
               ),

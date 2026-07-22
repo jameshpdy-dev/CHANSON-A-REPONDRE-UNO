@@ -188,6 +188,44 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
       (browser.favouritesOnly ? 1 : 0) +
       (browser.transcribedOnly ? 1 : 0);
 
+  Future<void> assignSelectedCardToDeck(CardImageModel card) async {
+    final decks = context.read<DeckProvider>();
+    final targets = decks.assignableDecksFor(card);
+    if (targets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No available custom deck can receive this card.'),
+        ),
+      );
+      return;
+    }
+
+    final targetDeckId = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Assign to deck'),
+        children: [
+          for (final target in targets)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, target.id),
+              child: Text(target.name),
+            ),
+        ],
+      ),
+    );
+    if (targetDeckId == null) return;
+
+    final assigned = await decks.assignCardToDeck(card, targetDeckId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          assigned ? 'Card assigned to deck.' : 'Card could not be assigned.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final decks = context.watch<DeckProvider>();
@@ -219,7 +257,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
           : deck.cards.isEmpty
           ? EmptyDeckState(
               title: 'This deck is empty',
-              message: 'Import PNG cards into ${deck.name} to browse them.',
+              message:
+                  'Assign cards to ${deck.name} from the permanent library.',
               onChooseDeck: () => context.go(AppRoutes.decks),
             )
           : AnimatedBuilder(
@@ -319,6 +358,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                   );
                                 }
                               },
+                              onAssignToDeck: () =>
+                                  assignSelectedCardToDeck(selected),
                             ),
                         ],
                       ),

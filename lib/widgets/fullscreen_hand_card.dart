@@ -38,7 +38,7 @@ class _FullscreenHandCardState extends State<FullscreenHandCard> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.faceUp ? widget.card.title : 'Face-down card';
+    final title = widget.faceUp ? widget.card.displayTitle : 'Face-down card';
     return Semantics(
       label:
           'Card ${widget.position} of ${widget.total}, $title, '

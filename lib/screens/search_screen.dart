@@ -158,7 +158,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ...cards.map(
                         (card) => ListTile(
                           leading: const Icon(Icons.image_outlined),
-                          title: Text(card.title),
+                          title: Text(card.displayTitle),
                           subtitle: Text(
                             '${card.category} • ${card.author} ${card.year ?? ''}',
                           ),

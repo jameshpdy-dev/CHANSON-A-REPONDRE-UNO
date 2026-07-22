@@ -368,7 +368,7 @@ class _GameLauncher extends StatelessWidget {
               if (decks.activeDeck == null)
                 const Padding(
                   padding: EdgeInsets.only(top: 12),
-                  child: Text('Import and select a deck before starting.'),
+                  child: Text('Select a deck before starting.'),
                 ),
             ],
           ),

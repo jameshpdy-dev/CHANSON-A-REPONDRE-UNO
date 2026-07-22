@@ -17,12 +17,12 @@ class StartupVideoViewport extends StatefulWidget {
 }
 
 class _StartupVideoViewportState extends State<StartupVideoViewport> {
-  double tiltX = 0;
-  double tiltY = 0;
+  double rotationX = 0;
+  double rotationY = 0;
 
-  void _resetTilt() => setState(() {
-    tiltX = 0;
-    tiltY = 0;
+  void _resetRotation() => setState(() {
+    rotationX = 0;
+    rotationY = 0;
   });
 
   @override
@@ -34,14 +34,12 @@ class _StartupVideoViewportState extends State<StartupVideoViewport> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = math.min(
-          constraints.maxWidth * (widget.compact ? 1 : .86),
-          widget.compact ? 520.0 : 1050.0,
-        );
-        final height = math.min(
-          constraints.maxHeight * (widget.compact ? 1 : .74),
-          widget.compact ? 320.0 : 650.0,
-        );
+        final width = widget.compact
+            ? math.min(constraints.maxWidth, 520.0)
+            : constraints.maxWidth;
+        final height = widget.compact
+            ? math.min(constraints.maxHeight, 320.0)
+            : constraints.maxHeight;
         final ratio =
             controller?.value.isInitialized == true &&
                 controller!.value.aspectRatio > 0
@@ -49,22 +47,15 @@ class _StartupVideoViewportState extends State<StartupVideoViewport> {
             : 16 / 9;
 
         return Center(
-          child: MouseRegion(
-            onExit: (_) => _resetTilt(),
-            onHover: reducedMotion
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onDoubleTap: reducedMotion ? null : _resetRotation,
+            onPanUpdate: reducedMotion
                 ? null
-                : (event) {
-                    final x = ((event.localPosition.dx / width) - .5).clamp(
-                      -.5,
-                      .5,
-                    );
-                    final y = ((event.localPosition.dy / height) - .5).clamp(
-                      -.5,
-                      .5,
-                    );
+                : (details) {
                     setState(() {
-                      tiltY = x * .12;
-                      tiltX = -y * .09;
+                      rotationY += details.delta.dx * .012;
+                      rotationX -= details.delta.dy * .012;
                     });
                   },
             child: AnimatedContainer(
@@ -77,8 +68,8 @@ class _StartupVideoViewportState extends State<StartupVideoViewport> {
                   ? Matrix4.identity()
                   : (Matrix4.identity()
                       ..setEntry(3, 2, .001)
-                      ..rotateX(tiltX)
-                      ..rotateY(tiltY)),
+                      ..rotateX(rotationX)
+                      ..rotateY(rotationY)),
               child: Center(
                 child: AspectRatio(
                   aspectRatio: ratio,
@@ -145,7 +136,7 @@ class _StartupVideoViewportState extends State<StartupVideoViewport> {
         fit: StackFit.expand,
         children: [
           FittedBox(
-            fit: BoxFit.contain,
+            fit: widget.compact ? BoxFit.contain : BoxFit.cover,
             child: SizedBox(
               width: size.width,
               height: size.height,

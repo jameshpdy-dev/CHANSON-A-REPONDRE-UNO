@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/card_image_model.dart';
@@ -32,8 +34,12 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> load() async {
     try {
-      await _storage.write(_decksKey, <Object>[]);
-      _decks = [];
+      final source = await _storage.read(_decksKey);
+      _decks = (jsonDecode(source ?? '[]') as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .map(Deck.fromJson)
+          .where((deck) => deck.id != chansonARepondreUnoDeckId)
+          .toList();
       _activeDeckId = await _storage.read(_activeKey);
       if (activeDeck == null) _activeDeckId = chansonARepondreUnoDeckId;
     } on Object catch (error) {
@@ -83,6 +89,30 @@ class DeckProvider extends ChangeNotifier {
       .where((deck) => deck.cards.any((card) => card.id == cardId))
       .firstOrNull;
 
+  List<Deck> assignableDecksFor(CardImageModel card) => _decks
+      .where((deck) => !deck.cards.any((item) => item.path == card.path))
+      .toList(growable: false);
+
+  Future<bool> assignCardToDeck(CardImageModel card, String targetDeckId) async {
+    if (targetDeckId == chansonARepondreUnoDeckId) return false;
+    final index = _decks.indexWhere((deck) => deck.id == targetDeckId);
+    if (index < 0) return false;
+    final deck = _decks[index];
+    if (deck.cards.any((item) => item.path == card.path)) return false;
+
+    final assignedCard = card.copyWith(
+      id: '$targetDeckId-${card.id}',
+      deckId: targetDeckId,
+      title: card.displayTitle,
+    );
+    _decks[index] = deck.copyWith(
+      coverPath: deck.coverPath.isEmpty ? assignedCard.path : deck.coverPath,
+      cards: [...deck.cards, assignedCard],
+    );
+    await _persist();
+    return true;
+  }
+
   Future<void> updateCard(CardImageModel updated) async {
     if (updated.deckId == chansonARepondreUnoDeckId) return;
     _decks = _decks
@@ -117,7 +147,7 @@ class DeckProvider extends ChangeNotifier {
       return CardImageModel(
         id: 'chanson-a-repondre-uno-$padded',
         deckId: chansonARepondreUnoDeckId,
-        title: 'Card $padded',
+        title: 'Carte UNO $sequence',
         path: 'assets/cards/chanson_a_repondre_uno/card_$padded.png',
         category: chansonARepondreUnoDeckName,
         colour: 'black',

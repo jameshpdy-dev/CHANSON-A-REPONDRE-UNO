@@ -48,7 +48,7 @@ class CardGridTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      card.title,
+                      card.displayTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
