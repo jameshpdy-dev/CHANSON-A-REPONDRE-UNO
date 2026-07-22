@@ -1,12 +1,7 @@
-import 'dart:convert';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
-import '../services/deck_import_service.dart';
 import '../services/local_storage_service.dart';
 
 const String chansonARepondreUnoDeckId = 'chanson-a-repondre-uno';
@@ -14,12 +9,10 @@ const String chansonARepondreUnoDeckName = 'CHANSON À RÉPONDRE UNO';
 const int chansonARepondreUnoCardCount = 67;
 
 class DeckProvider extends ChangeNotifier {
-  DeckProvider(this._storage, this._importer);
+  DeckProvider(this._storage);
   static Deck get permanentDeck => _permanentDeck;
 
   final LocalStorageService _storage;
-  final DeckImportService _importer;
-  static const _uuid = Uuid();
   static const _decksKey = 'decks';
   static const _activeKey = 'active_deck';
 
@@ -39,13 +32,8 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> load() async {
     try {
-      final source = await _storage.read(_decksKey);
-      if (source != null) {
-        _decks = (jsonDecode(source) as List<dynamic>)
-            .whereType<Map<String, dynamic>>()
-            .map(Deck.fromJson)
-            .toList();
-      }
+      await _storage.write(_decksKey, <Object>[]);
+      _decks = [];
       _activeDeckId = await _storage.read(_activeKey);
       if (activeDeck == null) _activeDeckId = chansonARepondreUnoDeckId;
     } on Object catch (error) {
@@ -68,44 +56,6 @@ class DeckProvider extends ChangeNotifier {
 
   Future<void> select(String id) async {
     _activeDeckId = id;
-    await _persist();
-  }
-
-  Future<void> create(String name) async {
-    if (name.trim().isEmpty) return;
-    final deck = Deck(
-      id: _uuid.v4(),
-      name: name.trim(),
-      createdAt: DateTime.now(),
-    );
-    _decks = [..._decks, deck];
-    _activeDeckId ??= deck.id;
-    await _persist();
-  }
-
-  Future<void> import(String name, List<PlatformFile> files) async {
-    final deck = await _importer.import(name, files);
-    _decks = [..._decks, deck];
-    _activeDeckId = deck.id;
-    await _persist();
-  }
-
-  Future<void> rename(String id, String name) async {
-    if (name.trim().isEmpty) return;
-    if (id == chansonARepondreUnoDeckId) return;
-    _decks = _decks
-        .map((deck) => deck.id == id ? deck.copyWith(name: name.trim()) : deck)
-        .toList();
-    await _persist();
-  }
-
-  Future<void> delete(String id) async {
-    if (id == chansonARepondreUnoDeckId) return;
-    final deck = _decks.where((item) => item.id == id).firstOrNull;
-    if (deck == null) return;
-    await _importer.deleteFiles(deck);
-    _decks = _decks.where((item) => item.id != id).toList();
-    if (_activeDeckId == id) _activeDeckId = _decks.firstOrNull?.id;
     await _persist();
   }
 
