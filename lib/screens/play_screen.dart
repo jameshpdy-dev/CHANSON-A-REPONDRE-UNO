@@ -392,26 +392,41 @@ class _JesterDealer extends StatelessWidget {
     child: IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final height = (constraints.maxHeight * .48).clamp(220.0, 430.0);
-          return Align(
-            alignment: Alignment.topCenter,
-            child: AnimatedSlide(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              offset: drawing ? const Offset(-.08, .04) : Offset.zero,
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 260),
-                scale: drawing ? 1.035 : 1,
-                child: Opacity(
-                  opacity: .76,
-                  child: Image.asset(
-                    'assets/images/jester_dealer.png',
-                    height: height,
-                    fit: BoxFit.contain,
+          final height = (constraints.maxHeight * .64).clamp(260.0, 620.0);
+          final width = (constraints.maxWidth * .48).clamp(240.0, 760.0);
+          return Stack(
+            children: [
+              Positioned(
+                top: constraints.maxHeight * .02,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: AnimatedSlide(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    offset: drawing ? const Offset(-.055, .035) : Offset.zero,
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 260),
+                      scale: drawing ? 1.035 : 1,
+                      child: Opacity(
+                        opacity: .88,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: height,
+                            maxWidth: width,
+                          ),
+                          child: Image.asset(
+                            'assets/images/jester_dealer.png',
+                            fit: BoxFit.contain,
+                            alignment: Alignment.topCenter,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           );
         },
       ),
