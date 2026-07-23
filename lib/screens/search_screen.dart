@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/card_item.dart';
 import '../providers/cards_provider.dart';
 import '../widgets/card_artwork.dart';
+import '../widgets/search_card_castle.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -16,22 +17,53 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   String query = '';
 
+  void openFullscreen(CardItem card) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (dialogContext) => Material(
+        color: Colors.transparent,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.of(dialogContext).pop(),
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: AspectRatio(
+                  aspectRatio: 2 / 3,
+                  child: CardArtwork(card: card, fit: BoxFit.contain),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<CardsProvider>();
     final normalized = query.trim().toLowerCase();
-    final results = state.cards.where((card) {
-      if (normalized.isEmpty) return true;
-      return [
-        card.title,
-        card.originalFilename ?? '',
-        card.category,
-        card.question,
-        card.answer,
-        card.transcription ?? '',
-        ...card.tags,
-      ].join(' ').toLowerCase().contains(normalized);
-    }).toList(growable: false);
+    final results = state.cards
+        .where((card) {
+          if (normalized.isEmpty) return true;
+          return [
+            card.title,
+            card.originalFilename ?? '',
+            card.category,
+            card.question,
+            card.answer,
+            card.transcription ?? '',
+            ...card.tags,
+          ].join(' ').toLowerCase().contains(normalized);
+        })
+        .toList(growable: false);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Search'),
@@ -53,49 +85,18 @@ class _SearchScreenState extends State<SearchScreen> {
           Expanded(
             child: results.isEmpty
                 ? const Center(child: Text('No matching cards.'))
-                : GridView.builder(
+                : ListView(
                     padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 240,
-                      childAspectRatio: .72,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: results.length,
-                    itemBuilder: (context, index) =>
-                        _SearchCard(card: results[index]),
+                    children: [
+                      SearchCardCastle(
+                        cards: results,
+                        onOpenFullscreen: openFullscreen,
+                      ),
+                    ],
                   ),
           ),
         ],
       ),
     );
   }
-}
-
-class _SearchCard extends StatelessWidget {
-  const _SearchCard({required this.card});
-  final CardItem card;
-
-  @override
-  Widget build(BuildContext context) => Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => context.go('/cards/${Uri.encodeComponent(card.id)}'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: CardArtwork(card: card, thumbnail: true)),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(
-                  card.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 }
