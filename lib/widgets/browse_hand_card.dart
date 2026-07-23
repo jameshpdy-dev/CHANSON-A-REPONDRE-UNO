@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/card_image_model.dart';
 import '../theme/app_theme.dart';
+import 'category_badge.dart';
 import 'stored_image.dart';
 
 class BrowseHandCard extends StatefulWidget {
@@ -88,19 +89,32 @@ class _BrowseHandCardState extends State<BrowseHandCard> {
                   aspectRatio: widget.card.aspectRatio,
                   child: Hero(
                     tag: 'browse-hand-card-${widget.card.id}',
-                    child: StoredImage(
-                      source: widget.card.imagePath,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const ColoredBox(
-                        color: Color(0xFF24170F),
-                        child: Center(
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: AppTheme.gold,
-                            size: 42,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        StoredImage(
+                          source: widget.card.imagePath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const ColoredBox(
+                            color: Color(0xFF24170F),
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: AppTheme.gold,
+                                size: 42,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        Positioned(
+                          left: 8,
+                          top: 8,
+                          child: CategoryBadge(
+                            category: widget.card.category,
+                            compact: true,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

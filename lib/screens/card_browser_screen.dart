@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_router.dart';
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/browse_hand_preview_args.dart';
 import '../providers/card_browser_provider.dart';
@@ -30,8 +31,14 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final deck = context.watch<DeckProvider>().activeDeck;
-    if (deck != null) browser.initializeForDeck(deck.id, deck.cards);
+    final decks = context.watch<DeckProvider>();
+    final deck = decks.activeDeck;
+    if (deck != null) {
+      browser.initializeForDeck(deck.id, deck.cards);
+      if (browser.categoryFilter == null && decks.selectedCategory != null) {
+        browser.applyFilters(category: decks.selectedCategory);
+      }
+    }
   }
 
   @override
@@ -88,8 +95,7 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
     var title = browser.titleFilter;
     var favourites = browser.favouritesOnly;
     var transcribed = browser.transcribedOnly;
-    final categories = deck.cards.map((card) => card.category).toSet().toList()
-      ..sort();
+    final categories = cardCategories.map((category) => category.label);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -147,20 +153,25 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        final deckProvider = context.read<DeckProvider>();
+                        final navigator = Navigator.of(sheetContext);
                         browser.applyFilters(
                           title: '',
                           favourites: false,
                           transcribed: false,
                           clearCategory: true,
                         );
-                        Navigator.pop(sheetContext);
+                        await deckProvider.setSelectedCategory(null);
+                        navigator.pop();
                       },
                       child: const Text('Clear'),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        final deckProvider = context.read<DeckProvider>();
+                        final navigator = Navigator.of(sheetContext);
                         browser.applyFilters(
                           category: category,
                           title: title,
@@ -168,7 +179,8 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                           transcribed: transcribed,
                           clearCategory: category == null,
                         );
-                        Navigator.pop(sheetContext);
+                        await deckProvider.setSelectedCategory(category);
+                        navigator.pop();
                       },
                       child: const Text('Apply'),
                     ),
@@ -303,6 +315,12 @@ class _CardBrowserScreenState extends State<CardBrowserScreen> {
                                 : browser.generateRandomHand,
                             onReset: browser.resetToFirstCards,
                             onFilter: showFilters,
+                            canGoPrevious: browser.canGoPrevious,
+                            canGoNext: browser.canGoNext,
+                            onPrevious: browser.previousPage,
+                            onNext: browser.nextPage,
+                            pageLabel:
+                                '${browser.pageNumber}/${browser.pageCount}',
                           ),
                           if (browser.availableCards.length < 5 &&
                               browser.availableCards.isNotEmpty)

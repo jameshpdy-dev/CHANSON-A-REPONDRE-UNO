@@ -62,6 +62,7 @@ class CardImageModel {
     ).firstMatch(title);
     return generated == null ? title : 'Carte UNO ${generated.group(1)}';
   }
+
   double get aspectRatio {
     final width = imageWidth;
     final height = imageHeight;
@@ -141,6 +142,8 @@ class CardImageModel {
     String? deckId,
     String? title,
     String? path,
+    String? category,
+    String? colour,
     bool? isFavourite,
     String? transcription,
     String? cleanedTranscription,
@@ -159,8 +162,8 @@ class CardImageModel {
     deckId: deckId ?? this.deckId,
     title: title ?? this.title,
     path: path ?? this.path,
-    category: category,
-    colour: colour,
+    category: category ?? this.category,
+    colour: colour ?? this.colour,
     importedAt: importedAt,
     author: author,
     theme: theme,

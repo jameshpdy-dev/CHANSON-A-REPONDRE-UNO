@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/card_categories.dart';
 import '../models/card_image_model.dart';
 import '../models/deck_model.dart';
 import '../services/local_storage_service.dart';
@@ -17,9 +18,11 @@ class DeckProvider extends ChangeNotifier {
   final LocalStorageService _storage;
   static const _decksKey = 'decks';
   static const _activeKey = 'active_deck';
+  static const _selectedCategoryKey = 'selected_card_category';
 
   List<Deck> _decks = [];
   String? _activeDeckId;
+  String? _selectedCategory;
   bool _loading = true;
   String? _error;
 
@@ -27,10 +30,10 @@ class DeckProvider extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
   String? get activeDeckId => _activeDeckId;
+  String? get selectedCategory => _selectedCategory;
   Deck? get activeDeck =>
       decks.where((deck) => deck.id == _activeDeckId).firstOrNull;
-  List<CardImageModel> get cards =>
-      decks.expand((deck) => deck.cards).toList();
+  List<CardImageModel> get cards => decks.expand((deck) => deck.cards).toList();
 
   Future<void> load() async {
     try {
@@ -40,8 +43,14 @@ class DeckProvider extends ChangeNotifier {
           .map(Deck.fromJson)
           .where((deck) => deck.id != chansonARepondreUnoDeckId)
           .toList();
-      _activeDeckId = await _storage.read(_activeKey);
+      _activeDeckId = _decodeStoredString(await _storage.read(_activeKey));
       if (activeDeck == null) _activeDeckId = chansonARepondreUnoDeckId;
+      final savedCategory = _decodeStoredString(
+        await _storage.read(_selectedCategoryKey),
+      );
+      _selectedCategory = isKnownCardCategory(savedCategory)
+          ? normalizeCardCategoryLabel(savedCategory)
+          : null;
     } on Object catch (error) {
       _decks = [];
       _error = 'Stored decks could not be loaded: $error';
@@ -63,6 +72,18 @@ class DeckProvider extends ChangeNotifier {
   Future<void> select(String id) async {
     _activeDeckId = id;
     await _persist();
+  }
+
+  Future<void> setSelectedCategory(String? category) async {
+    _selectedCategory = category == null
+        ? null
+        : normalizeCardCategoryLabel(category);
+    if (_selectedCategory == null) {
+      await _storage.remove(_selectedCategoryKey);
+    } else {
+      await _storage.write(_selectedCategoryKey, _selectedCategory!);
+    }
+    notifyListeners();
   }
 
   Future<void> toggleFavourite(String cardId) async {
@@ -93,7 +114,10 @@ class DeckProvider extends ChangeNotifier {
       .where((deck) => !deck.cards.any((item) => item.path == card.path))
       .toList(growable: false);
 
-  Future<bool> assignCardToDeck(CardImageModel card, String targetDeckId) async {
+  Future<bool> assignCardToDeck(
+    CardImageModel card,
+    String targetDeckId,
+  ) async {
     if (targetDeckId == chansonARepondreUnoDeckId) return false;
     final index = _decks.indexWhere((deck) => deck.id == targetDeckId);
     if (index < 0) return false;
@@ -104,6 +128,7 @@ class DeckProvider extends ChangeNotifier {
       id: '$targetDeckId-${card.id}',
       deckId: targetDeckId,
       title: card.displayTitle,
+      category: normalizeCardCategoryLabel(card.category),
     );
     _decks[index] = deck.copyWith(
       coverPath: deck.coverPath.isEmpty ? assignedCard.path : deck.coverPath,
@@ -144,16 +169,27 @@ class DeckProvider extends ChangeNotifier {
     cards: List.generate(chansonARepondreUnoCardCount, (index) {
       final sequence = index + 1;
       final padded = sequence.toString().padLeft(3, '0');
+      final category = cardCategoryAt(index);
       return CardImageModel(
         id: 'chanson-a-repondre-uno-$padded',
         deckId: chansonARepondreUnoDeckId,
         title: 'Carte UNO $sequence',
         path: 'assets/cards/chanson_a_repondre_uno/card_$padded.png',
-        category: chansonARepondreUnoDeckName,
-        colour: 'black',
+        category: category.label,
+        colour: category.colour,
         importedAt: DateTime(2026),
-        tags: const ['bundled', 'permanent'],
+        tags: ['bundled', 'permanent', category.id],
       );
     }, growable: false),
   );
+
+  static String? _decodeStoredString(String? raw) {
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is String ? decoded : raw;
+    } on Object {
+      return raw;
+    }
+  }
 }

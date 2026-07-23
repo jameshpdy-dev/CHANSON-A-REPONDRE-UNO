@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../data/card_categories.dart';
 import '../providers/deck_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/deck_tile.dart';
 import '../widgets/home_navigation_button.dart';
 
@@ -33,23 +35,50 @@ class DeckSelectionScreen extends StatelessWidget {
                     : constraints.maxWidth >= 420
                     ? 2
                     : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                  itemCount: provider.decks.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.15,
-                  ),
-                  itemBuilder: (context, index) {
-                    final deck = provider.decks[index];
-                    return DeckTile(
-                      deck: deck,
-                      selected: deck.id == provider.activeDeckId,
-                      onSelect: () => provider.select(deck.id),
-                    );
-                  },
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final category in cardCategories)
+                              ChoiceChip(
+                                label: Text(category.badge),
+                                selected:
+                                    provider.selectedCategory == category.label,
+                                selectedColor: AppTheme.gold,
+                                onSelected: (_) => provider.setSelectedCategory(
+                                  category.label,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+                      sliver: SliverGrid.builder(
+                        itemCount: provider.decks.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.15,
+                        ),
+                        itemBuilder: (context, index) {
+                          final deck = provider.decks[index];
+                          return DeckTile(
+                            deck: deck,
+                            selected: deck.id == provider.activeDeckId,
+                            onSelect: () => provider.select(deck.id),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

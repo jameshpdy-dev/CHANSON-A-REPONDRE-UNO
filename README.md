@@ -1,17 +1,28 @@
-# uno2
+# CHANSON À RÉPONDRE UNO
 
-A new Flutter project.
+Flutter web application for the permanent CHANSON À RÉPONDRE UNO card
+library and game.
 
-## Getting Started
+## Version 2.0
 
-This project is a starting point for a Flutter application.
+Version 2.0 certifies the current public app feature set:
 
-A few resources to get you started if this is your first Flutter project:
+- the permanent 67-card bundled deck remains available at startup;
+- five deck categories are available across Browse, Deck Selection, Search,
+  and Play: Classique, Sauvage, Poésie, Cyberpunk, and Art contemporain;
+- face-down cards in Play use the matching supplied category verso;
+- Browse shows five cards at a time while preserving shuffle, search, filters,
+  and navigation;
+- Search displays card thumbnails, and long-press/long-click opens the card
+  fullscreen.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+See [RELEASE_NOTES.md](RELEASE_NOTES.md) for release details.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Local web build
+
+```powershell
+flutter pub get
+flutter analyze
+flutter test
+flutter build web --release --base-href "/CHANSON-A-REPONDRE-UNO/"
+```

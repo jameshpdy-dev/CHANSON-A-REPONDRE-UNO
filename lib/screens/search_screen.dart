@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/app_router.dart';
+import '../data/card_categories.dart';
 import '../providers/deck_provider.dart';
 import '../services/search_service.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/stored_image.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -101,12 +103,12 @@ class _SearchScreenState extends State<SearchScreen> {
                           value: null,
                           child: Text('Any category'),
                         ),
-                        ...provider.cards
-                            .map((card) => card.category)
-                            .toSet()
-                            .map(
-                              (v) => DropdownMenuItem(value: v, child: Text(v)),
-                            ),
+                        ...cardCategories.map(
+                          (v) => DropdownMenuItem(
+                            value: v.label,
+                            child: Text(v.badge),
+                          ),
+                        ),
                       ],
                       onChanged: (v) => setState(() => category = v),
                     ),
@@ -157,11 +159,31 @@ class _SearchScreenState extends State<SearchScreen> {
                         const ListTile(title: Text('CARDS')),
                       ...cards.map(
                         (card) => ListTile(
-                          leading: const Icon(Icons.image_outlined),
+                          leading: GestureDetector(
+                            onLongPress: () =>
+                                context.push(AppRoutes.card(card.id)),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 54,
+                                height: 76,
+                                child: StoredImage(
+                                  source: card.imagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => const ColoredBox(
+                                    color: Color(0xFF24170F),
+                                    child: Icon(Icons.broken_image_outlined),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                           title: Text(card.displayTitle),
                           subtitle: Text(
                             '${card.category} • ${card.author} ${card.year ?? ''}',
                           ),
+                          onLongPress: () =>
+                              context.push(AppRoutes.card(card.id)),
                           onTap: () => context.go(AppRoutes.card(card.id)),
                         ),
                       ),
