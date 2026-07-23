@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../core/app_router.dart';
+
 import '../data/card_categories.dart';
+import '../models/card_image_model.dart';
 import '../providers/deck_provider.dart';
 import '../services/search_service.dart';
 import '../widgets/home_navigation_button.dart';
+import '../widgets/search_card_castle.dart';
 import '../widgets/stored_image.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
+
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -19,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String? deckId;
   String? category;
   String? colour;
+
   @override
   void dispose() {
     controller.dispose();
@@ -34,6 +37,38 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  void openFullscreen(CardImageModel card) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (dialogContext) => Material(
+        color: Colors.transparent,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.of(dialogContext).pop(),
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: AspectRatio(
+                  aspectRatio: card.aspectRatio,
+                  child: StoredImage(
+                    source: card.imagePath,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DeckProvider>();
@@ -46,6 +81,7 @@ class _SearchScreenState extends State<SearchScreen> {
       colour: colour,
     );
     final decks = service.decks(provider.decks, controller.text);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Search'),
@@ -157,36 +193,14 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       if (cards.isNotEmpty)
                         const ListTile(title: Text('CARDS')),
-                      ...cards.map(
-                        (card) => ListTile(
-                          leading: GestureDetector(
-                            onLongPress: () =>
-                                context.push(AppRoutes.card(card.id)),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: SizedBox(
-                                width: 54,
-                                height: 76,
-                                child: StoredImage(
-                                  source: card.imagePath,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => const ColoredBox(
-                                    color: Color(0xFF24170F),
-                                    child: Icon(Icons.broken_image_outlined),
-                                  ),
-                                ),
-                              ),
-                            ),
+                      if (cards.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: SearchCardCastle(
+                            cards: cards,
+                            onOpenFullscreen: openFullscreen,
                           ),
-                          title: Text(card.displayTitle),
-                          subtitle: Text(
-                            '${card.category} • ${card.author} ${card.year ?? ''}',
-                          ),
-                          onLongPress: () =>
-                              context.push(AppRoutes.card(card.id)),
-                          onTap: () => context.go(AppRoutes.card(card.id)),
                         ),
-                      ),
                     ],
                   ),
           ),
