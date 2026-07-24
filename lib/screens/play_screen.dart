@@ -393,30 +393,30 @@ class _JesterDealer extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final height = (constraints.maxHeight * .64).clamp(260.0, 620.0);
-          final width = (constraints.maxWidth * .48).clamp(240.0, 760.0);
+          final width = (constraints.maxWidth * 1.12).clamp(640.0, 1500.0);
           return Stack(
             children: [
               Positioned(
-                top: constraints.maxHeight * .02,
+                top: constraints.maxHeight * .01,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: AnimatedSlide(
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutCubic,
-                    offset: drawing ? const Offset(-.055, .035) : Offset.zero,
+                    offset: drawing ? const Offset(-.035, .025) : Offset.zero,
                     child: AnimatedScale(
                       duration: const Duration(milliseconds: 260),
                       scale: drawing ? 1.035 : 1,
                       child: Opacity(
-                        opacity: .88,
+                        opacity: .9,
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
                             maxHeight: height,
                             maxWidth: width,
                           ),
                           child: Image.asset(
-                            'assets/images/jester_dealer.png',
+                            'assets/images/puppet_dealer.png',
                             fit: BoxFit.contain,
                             alignment: Alignment.topCenter,
                           ),
